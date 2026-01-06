@@ -3,7 +3,7 @@
 한국투자증권(KIS) Open API를 활용한 **실시간 자산 현황 대시보드**입니다.
 터미널 스타일의 UI로 모든 계좌의 자산을 한눈에 확인할 수 있습니다.
 
-![Dashboard Preview](https://i.ibb.co/4nx55Wj9/preview.png)
+![Dashboard Preview](https://i.ibb.co/pBp9923G/preview.png)
 
 ## ✨ 주요 기능
 
