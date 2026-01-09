@@ -1,9 +1,7 @@
-# 📊 Blanc - Finance Dashboard
+# 📊 Finance Dashboard
 
 한국투자증권(KIS) Open API를 활용한 **실시간 자산 현황 대시보드**입니다.
 터미널 스타일의 UI로 모든 계좌의 자산을 한눈에 확인할 수 있습니다.
-
-<video src="https://github.com/yaffleria/kis-dashboard/blob/main/public/record.mp4?raw=true" controls width="100%"></video>
 
 ## ✨ 주요 기능
 
@@ -11,7 +9,7 @@
 - 💼 **다중 계좌 지원**: 주식, ISA, 연금저축, IRP 등 다양한 계좌 유형 지원
 - 🌍 **국내/해외 주식 통합**: 국내 주식 + 해외(미국) 주식 자동 병합
 - 💱 **실시간 환율 적용**: frankfurter.app API를 통해 실시간 환율 적용 (실패 시 1,450원 fallback)
-- 📰 **글로벌 마켓 뉴스**: [Finnhub](https://finnhub.io/) API를 통한 실시간 글로벌 마켓 뉴스 피드
+- 📰 **마켓 뉴스**: KIS Open API를 통한 실시간 증권 뉴스 피드
 - 📟 **Matrix Rain 효과**: 시스템 상태 패널에 매트릭스 스타일의 디지털 비 (Digital Rain) 애니메이션 적용
 - 🔒 **보안 우선**: API 키는 서버 사이드에서만 사용 (클라이언트 노출 없음)
 
@@ -19,10 +17,10 @@
 
 | 항목            | 갱신 주기 | 비고                                       |
 | --------------- | --------- | ------------------------------------------ |
-| **뉴스 피드**   | 1분       | Finnhub API (최신 시장 뉴스 자동 갱신)     |
+| **뉴스 피드**   | 1분       | KIS News API                               |
 | **시스템 로그** | 3초       | 서버 로그 폴링 (API 통신 및 에러 모니터링) |
 | **환율 정보**   | 5분       | Frankfurter API 캐시                       |
-| **잔고 데이터** | 수동      | 새로고침 버튼 또는 페이지 로드 시          |
+| **잔고 데이터** | 15분      | 매 15분마다 자동 갱신 (또는 수동 리프레시) |
 
 ---
 
@@ -63,9 +61,6 @@ cp .env.example .env
 ```bash
 # 개발 모드 실행
 pnpm dev
-
-# 데모 모드 (데이터 시뮬레이션)
-pnpm demo
 ```
 
 ---

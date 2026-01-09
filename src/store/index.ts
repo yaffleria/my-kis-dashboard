@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Account, AccountBalance, PortfolioSummary, AssetAllocation, StockWeight, AccountWeight } from '@/types'
+import type { Account, AccountBalance, PortfolioSummary } from '@/types'
 
 /**
  * 계좌 설정 스토어 타입
@@ -20,13 +20,13 @@ interface AccountStore {
 /**
  * 대시보드 데이터 스토어 타입
  */
+/**
+ * 대시보드 데이터 스토어 타입
+ */
 interface DashboardStore {
   // State
   balances: AccountBalance[]
   portfolioSummary: PortfolioSummary | null
-  assetAllocation: AssetAllocation[]
-  stockWeights: StockWeight[]
-  accountWeights: AccountWeight[]
   isLoading: boolean
   error: string | null
   lastUpdated: string | null
@@ -34,29 +34,10 @@ interface DashboardStore {
   // Actions
   setBalances: (balances: AccountBalance[]) => void
   setPortfolioSummary: (summary: PortfolioSummary) => void
-  setAssetAllocation: (allocation: AssetAllocation[]) => void
-  setStockWeights: (weights: StockWeight[]) => void
-  setAccountWeights: (weights: AccountWeight[]) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   setLastUpdated: (date: string) => void
   clearData: () => void
-}
-
-/**
- * UI 상태 스토어 타입
- */
-interface UIStore {
-  // State
-  sidebarOpen: boolean
-  activeView: 'overview' | 'accounts' | 'holdings' | 'analysis'
-  refreshInterval: number // 자동 갱신 간격 (분)
-
-  // Actions
-  toggleSidebar: () => void
-  setSidebarOpen: (open: boolean) => void
-  setActiveView: (view: UIStore['activeView']) => void
-  setRefreshInterval: (interval: number) => void
 }
 
 /**
@@ -108,9 +89,6 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
   // Initial State
   balances: [],
   portfolioSummary: null,
-  assetAllocation: [],
-  stockWeights: [],
-  accountWeights: [],
   isLoading: false,
   error: null,
   lastUpdated: null,
@@ -119,12 +97,6 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
   setBalances: (balances) => set({ balances }),
 
   setPortfolioSummary: (summary) => set({ portfolioSummary: summary }),
-
-  setAssetAllocation: (allocation) => set({ assetAllocation: allocation }),
-
-  setStockWeights: (weights) => set({ stockWeights: weights }),
-
-  setAccountWeights: (weights) => set({ accountWeights: weights }),
 
   setLoading: (loading) => set({ isLoading: loading }),
 
@@ -136,51 +108,10 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
     set({
       balances: [],
       portfolioSummary: null,
-      assetAllocation: [],
-      stockWeights: [],
-      accountWeights: [],
       error: null,
       lastUpdated: null,
     }),
 }))
 
-/**
- * UI 상태 스토어
- * - 사이드바, 뷰 상태 등 UI 관련 상태 관리
- */
-export const useUIStore = create<UIStore>()(
-  persist(
-    (set) => ({
-      // Initial State
-      sidebarOpen: true,
-      activeView: 'overview',
-      refreshInterval: 5,
-
-      // Actions
-      toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-
-      setSidebarOpen: (open) => set({ sidebarOpen: open }),
-
-      setActiveView: (view) => set({ activeView: view }),
-
-      setRefreshInterval: (interval) => set({ refreshInterval: interval }),
-    }),
-    {
-      name: 'kis-ui-preferences',
-    }
-  )
-)
-
-// Chart Colors - Homebrew Terminal 테마
-export const CHART_COLORS = [
-  '#2ea44f', // brew-green (Primary)
-  '#3fb950', // brew-neonGreen (Highlight)
-  '#58a6ff', // brew-blue (Info)
-  '#d29922', // brew-yellow (Warning)
-  '#f85149', // brew-red (Error)
-  '#a371f7', // Purple
-  '#79c0ff', // Light Blue
-  '#7ee787', // Light Green
-  '#ffa657', // Orange
-  '#ff7b72', // Light Red
-]
+// Chart Colors - constants에서 re-export (하위 호환성 유지)
+export { HOMEBREW_CHART_COLORS as CHART_COLORS } from '@/lib/constants'
