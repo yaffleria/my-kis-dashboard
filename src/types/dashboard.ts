@@ -82,3 +82,26 @@ export interface DividendItem {
   type: "pension" | "regular";
   amount: number;
 }
+
+/**
+ * 주가 차트 데이터 (일별 시세)
+ */
+export interface StockChartDataPoint {
+  date: string; // YYYYMMDD 또는 YYYY-MM-DD
+  open: number; // 시가
+  high: number; // 고가
+  low: number; // 저가
+  close: number; // 종가
+  volume: number; // 거래량
+}
+
+/**
+ * 주가 차트 API 응답
+ */
+export interface StockChartResponse {
+  success: boolean;
+  stockCode: string;
+  stockName?: string;
+  data: StockChartDataPoint[];
+  error?: string;
+}

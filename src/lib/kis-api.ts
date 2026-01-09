@@ -564,3 +564,179 @@ export function formatCompactNumber(value: number): string {
   }
   return value.toLocaleString("ko-KR");
 }
+
+/**
+ * 주식 일별 시세 조회 API (국내주식기간별시세)
+ * TR_ID: FHKST03010100
+ * Returns: 일/주/월/년 봉 데이터 (OHLCV)
+ */
+export interface StockDailyPriceItem {
+  stck_bsop_date: string; // 영업일자 (YYYYMMDD)
+  stck_oprc: string; // 시가
+  stck_hgpr: string; // 고가
+  stck_lwpr: string; // 저가
+  stck_clpr: string; // 종가
+  acml_vol: string; // 누적 거래량
+  acml_tr_pbmn: string; // 누적 거래대금
+  prdy_vrss: string; // 전일 대비
+  prdy_vrss_sign: string; // 전일 대비 부호
+}
+
+export async function getStockDailyPrice(
+  stockCode: string,
+  appKey: string,
+  appSecret: string,
+  startDate: string, // YYYYMMDD
+  endDate: string, // YYYYMMDD
+  periodCode: "D" | "W" | "M" | "Y" = "D" // D: 일봉, W: 주봉, M: 월봉, Y: 년봉
+): Promise<{ output1: StockDailyPriceItem[]; output2?: unknown }> {
+  try {
+    const headers = await getHeaders("FHKST03010100", appKey, appSecret);
+
+    const response = await axios.get(
+      `${KIS_API_URL[ENV]}/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice`,
+      {
+        headers,
+        params: {
+          FID_COND_MRKT_DIV_CODE: "J", // J: 주식, ETF, ETN
+          FID_INPUT_ISCD: stockCode,
+          FID_INPUT_DATE_1: startDate,
+          FID_INPUT_DATE_2: endDate,
+          FID_PERIOD_DIV_CODE: periodCode,
+          FID_ORG_ADJ_PRC: "0", // 0: 수정주가, 1: 원주가
+        },
+      }
+    );
+
+    if (response.data.rt_cd !== "0") {
+      console.error(
+        `[API Error] Stock Daily Price (${stockCode}): ${response.data.msg1} (${response.data.rt_cd})`
+      );
+      throw new Error(response.data.msg1 || "주가 시세 조회 실패");
+    }
+
+    return {
+      output1: response.data.output2 || [], // Note: output2가 실제 일봉 데이터
+      output2: response.data.output1 || {}, // output1은 종목 기본정보
+    };
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      console.error(
+        `[Network Error] Stock Daily Price (${stockCode}): status=${
+          error.response.status
+        } data=${JSON.stringify(error.response.data)}`
+      );
+    }
+    throw error;
+  }
+}
+
+/**
+ * 해외주식 일별 시세 조회 API (해외주식 종목/지수/환율기간별시세)
+ * TR_ID: FHKST03030100
+ * Returns: 일봉 데이터 (OHLCV) - 더 많은 데이터 제공
+ *
+ * Note: HHDFS76240000 API는 최근 100건만 제공하지만,
+ *       FHKST03030100은 시작일-종료일 범위로 조회 가능
+ */
+export interface OverseasDailyPriceItem {
+  xymd: string; // 일자 (YYYYMMDD)
+  open: string; // 시가
+  high: string; // 고가
+  low: string; // 저가
+  clos: string; // 종가
+  tvol: string; // 거래량
+  tamt: string; // 거래대금
+  diff: string; // 전일 대비
+  rate: string; // 등락률
+  sign: string; // 부호
+}
+
+// FHKST03030100 API 응답 구조
+export interface OverseasChartPriceItem {
+  stck_bsop_date: string; // 주식 영업 일자 (YYYYMMDD)
+  ovrs_nmix_prpr: string; // 해외 종목 현재가
+  ovrs_nmix_oprc: string; // 시가
+  ovrs_nmix_hgpr: string; // 고가
+  ovrs_nmix_lwpr: string; // 저가
+  acml_vol: string; // 누적 거래량
+  acml_tr_pbmn: string; // 누적 거래대금
+  mod_yn: string; // 변경 여부
+}
+
+export async function getOverseasDailyPrice(
+  stockCode: string,
+  exchangeCode: string, // NAS, NYS, AMS, HKS, SHS, SZS, TSE, HNX, HSX
+  appKey: string,
+  appSecret: string,
+  startDate: string, // YYYYMMDD
+  endDate: string, // YYYYMMDD
+  periodCode: "D" | "W" | "M" = "D" // D: 일, W: 주, M: 월
+): Promise<{ output1: OverseasDailyPriceItem[]; output2?: unknown }> {
+  try {
+    const headers = await getHeaders("FHKST03030100", appKey, appSecret);
+
+    // 거래소 코드 매핑 (3자리로 변환)
+    const exchangeMap: Record<string, string> = {
+      NASD: "NAS",
+      NYSE: "NYS",
+      AMEX: "AMS",
+      NAS: "NAS",
+      NYS: "NYS",
+      AMS: "AMS",
+    };
+    const mappedExchange = exchangeMap[exchangeCode] || "NAS";
+
+    const response = await axios.get(
+      `${KIS_API_URL[ENV]}/uapi/overseas-price/v1/quotations/inquire-daily-chartprice`,
+      {
+        headers,
+        params: {
+          FID_COND_MRKT_DIV_CODE: "N", // N: 해외지수, 주식
+          FID_INPUT_ISCD: `${mappedExchange}${stockCode}`, // 거래소코드+종목코드 (예: NASAAPL)
+          FID_INPUT_DATE_1: startDate,
+          FID_INPUT_DATE_2: endDate,
+          FID_PERIOD_DIV_CODE: periodCode,
+        },
+      }
+    );
+
+    if (response.data.rt_cd !== "0") {
+      console.error(
+        `[API Error] Overseas Daily Price (${stockCode}): ${response.data.msg1} (${response.data.rt_cd})`
+      );
+      throw new Error(response.data.msg1 || "해외 주가 시세 조회 실패");
+    }
+
+    // output2가 실제 일봉 데이터
+    const rawItems = (response.data.output2 || []) as OverseasChartPriceItem[];
+
+    // OverseasDailyPriceItem 형식으로 변환
+    const mappedItems: OverseasDailyPriceItem[] = rawItems.map((item) => ({
+      xymd: item.stck_bsop_date,
+      open: item.ovrs_nmix_oprc,
+      high: item.ovrs_nmix_hgpr,
+      low: item.ovrs_nmix_lwpr,
+      clos: item.ovrs_nmix_prpr,
+      tvol: item.acml_vol,
+      tamt: item.acml_tr_pbmn,
+      diff: "0",
+      rate: "0",
+      sign: "0",
+    }));
+
+    return {
+      output1: mappedItems,
+      output2: response.data.output1 || {},
+    };
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      console.error(
+        `[Network Error] Overseas Daily Price (${stockCode}): status=${
+          error.response.status
+        } data=${JSON.stringify(error.response.data)}`
+      );
+    }
+    throw error;
+  }
+}

@@ -11,5 +11,6 @@ export {
   type ActivePortfoliosProps,
 } from "./ActivePortfolios";
 export { HoldingsTable, type HoldingsTableProps } from "./HoldingsTable";
+export { StockPriceChart, type StockPriceChartProps } from "./StockPriceChart";
 // export { TerminalPieChart, type TerminalPieChartProps } from './TerminalPieChart' // Deprecated
 // export { SystemLog, type SystemLogProps } from './SystemLog' // Deprecated

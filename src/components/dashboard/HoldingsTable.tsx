@@ -1,13 +1,20 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { FixedSizeList as List } from "react-window";
 import type { DashboardBalance, HoldingsRow } from "@/types";
 import { SortIcon, type SortConfig } from "@/components/ui";
+import { StockPriceChart } from "./StockPriceChart";
 
 /**
  * 보유 종목 테이블 컴포넌트
- * 모든 계좌의 종목을 합산하여 정렬 가능한 테이블로 표시
+ * - 가상화 스크롤 적용 (react-window)
+ * - 종목 클릭 시 하단에 90일 차트 표시 (고정 위치)
  */
+
+const ROW_HEIGHT = 32; // 각 행의 높이 (px)
+const CHART_HEIGHT = 380; // 차트 영역 높이 (px)
+const HEADER_HEIGHT = 36; // 헤더 높이 (px)
 
 export interface HoldingsTableProps {
   balances: DashboardBalance[];
@@ -27,6 +34,33 @@ export function HoldingsTable({
     key: "evaluationAmount",
     direction: "desc",
   });
+
+  // 선택된 종목 (차트 표시용)
+  const [selectedStock, setSelectedStock] = useState<{
+    code: string;
+    name: string;
+  } | null>(null);
+
+  // 컨테이너 높이 측정
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerHeight, setContainerHeight] = useState(400);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerHeight(rect.height);
+      }
+    };
+
+    updateHeight();
+    const resizeObserver = new ResizeObserver(updateHeight);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => resizeObserver.disconnect();
+  }, []);
 
   // 데이터 통합 및 매핑 (모든 계좌의 잔고 합산)
   const rows = useMemo(() => {
@@ -114,65 +148,166 @@ export function HoldingsTable({
   };
 
   const columns = [
-    { key: "stockName", label: "SYMBOL", align: "left" as const },
-    { key: "quantity", label: "QTY", align: "right" as const },
-    { key: "currentPrice", label: "PRICE", align: "right" as const },
-    { key: "evaluationAmount", label: "VALUE", align: "right" as const },
-    { key: "weight", label: "WGHT", align: "right" as const },
-    { key: "profitLossRate", label: "ROI", align: "right" as const },
+    { key: "stockName", label: "SYMBOL", align: "left" as const, width: "35%" },
+    { key: "quantity", label: "QTY", align: "right" as const, width: "8%" },
+    {
+      key: "currentPrice",
+      label: "PRICE",
+      align: "right" as const,
+      width: "17%",
+    },
+    {
+      key: "evaluationAmount",
+      label: "VALUE",
+      align: "right" as const,
+      width: "17%",
+    },
+    { key: "weight", label: "WGHT", align: "right" as const, width: "10%" },
+    {
+      key: "profitLossRate",
+      label: "ROI",
+      align: "right" as const,
+      width: "13%",
+    },
   ];
 
+  const handleRowClick = (row: HoldingsRow) => {
+    // 같은 종목 클릭 시 토글
+    if (selectedStock?.code === row.stockCode) {
+      setSelectedStock(null);
+    } else {
+      setSelectedStock({
+        code: row.stockCode,
+        name: row.stockName,
+      });
+    }
+  };
+
+  const handleChartClose = () => {
+    setSelectedStock(null);
+  };
+
+  // 리스트 영역 높이 계산 (차트 표시 시 차트 높이만큼 줄임)
+  const listHeight = useMemo(() => {
+    const availableHeight = containerHeight - HEADER_HEIGHT;
+    if (selectedStock) {
+      return Math.max(availableHeight - CHART_HEIGHT, 100);
+    }
+    return availableHeight;
+  }, [containerHeight, selectedStock]);
+
+  // 가상화 행 렌더러
+  const RowRenderer = ({
+    index,
+    style,
+  }: {
+    index: number;
+    style: React.CSSProperties;
+  }) => {
+    const row = sortedRows[index];
+    const isPos = row.profitLossRate >= 0;
+    const isSelected = selectedStock?.code === row.stockCode;
+
+    return (
+      <div
+        style={style}
+        className={`flex items-center border-b border-terminal-border/30 hover:bg-brew-green/10 transition-colors cursor-pointer font-mono text-sm ${
+          isSelected ? "bg-brew-green/15 border-l-2 border-l-brew-green" : ""
+        }`}
+        onClick={() => handleRowClick(row)}
+      >
+        <div
+          className={`font-bold truncate px-1 ${
+            isSelected ? "text-brew-neonGreen" : "text-brew-green"
+          }`}
+          style={{ width: columns[0].width }}
+        >
+          {isSelected && <span className="mr-1">▸</span>}
+          {row.stockName}
+        </div>
+        <div
+          className="text-right text-terminal-text px-1"
+          style={{ width: columns[1].width }}
+        >
+          {row.quantity}
+        </div>
+        <div
+          className="text-right text-terminal-text px-1"
+          style={{ width: columns[2].width }}
+        >
+          {formatCurrency(row.currentPrice)}
+        </div>
+        <div
+          className="text-right text-terminal-text px-1"
+          style={{ width: columns[3].width }}
+        >
+          {formatCurrency(row.evaluationAmount)}
+        </div>
+        <div
+          className="text-right text-terminal-text px-1"
+          style={{ width: columns[4].width }}
+        >
+          {(row.weight || 0).toFixed(2)}%
+        </div>
+        <div
+          className={`text-right px-1 ${
+            isPos ? "text-brew-green" : "text-brew-red"
+          }`}
+          style={{ width: columns[5].width }}
+        >
+          {formatPercent(row.profitLossRate)}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <table className="w-full text-left text-sm relative">
-      <thead className="sticky top-0 bg-terminal-bg z-10 shadow-sm shadow-terminal-border">
-        <tr className="text-terminal-muted border-b border-terminal-border">
-          {columns.map((col) => (
-            <th
-              key={col.key}
-              className={`py-2 cursor-pointer group hover:text-brew-green transition-colors select-none ${
-                col.align === "right" ? "text-right" : ""
-              }`}
-              onClick={() => handleSort(col.key)}
-            >
-              {col.label} <SortIcon colKey={col.key} sortConfig={sortConfig} />
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="font-mono">
-        {sortedRows.map((row) => {
-          const isPos = row.profitLossRate >= 0;
-          return (
-            <tr
-              key={row.stockCode}
-              className="border-b border-terminal-border/30 hover:bg-brew-green/5 transition-colors"
-            >
-              <td className="py-2 text-brew-green font-bold">
-                {row.stockName}
-              </td>
-              <td className="py-2 text-right text-terminal-text">
-                {row.quantity}
-              </td>
-              <td className="py-2 text-right text-terminal-text">
-                {formatCurrency(row.currentPrice)}
-              </td>
-              <td className="py-2 text-right text-terminal-text">
-                {formatCurrency(row.evaluationAmount)}
-              </td>
-              <td className="py-2 text-right text-terminal-text">
-                {(row.weight || 0).toFixed(2)}%
-              </td>
-              <td
-                className={`py-2 text-right ${
-                  isPos ? "text-brew-green" : "text-brew-red"
-                }`}
-              >
-                {formatPercent(row.profitLossRate)}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div ref={containerRef} className="flex flex-col h-full">
+      {/* 테이블 헤더 (고정) */}
+      <div
+        className="flex items-center text-terminal-muted border-b border-terminal-border bg-terminal-bg z-10 text-sm"
+        style={{ height: HEADER_HEIGHT }}
+      >
+        {columns.map((col) => (
+          <div
+            key={col.key}
+            className={`py-2 px-1 cursor-pointer hover:text-brew-green transition-colors select-none ${
+              col.align === "right" ? "text-right" : ""
+            }`}
+            style={{ width: col.width }}
+            onClick={() => handleSort(col.key)}
+          >
+            {col.label} <SortIcon colKey={col.key} sortConfig={sortConfig} />
+          </div>
+        ))}
+      </div>
+
+      {/* 가상화된 테이블 본문 */}
+      <div className="flex-1 min-h-0">
+        <List
+          height={listHeight}
+          itemCount={sortedRows.length}
+          itemSize={ROW_HEIGHT}
+          width="100%"
+          className="scrollbar-thin scrollbar-thumb-terminal-border scrollbar-track-transparent"
+        >
+          {RowRenderer}
+        </List>
+      </div>
+
+      {/* Stock Price Chart (하단 고정, 선택된 종목이 있을 때만 표시) */}
+      {selectedStock && (
+        <div
+          className="border-t border-terminal-border bg-terminal-bg shrink-0"
+          style={{ height: CHART_HEIGHT }}
+        >
+          <StockPriceChart
+            stockCode={selectedStock.code}
+            stockName={selectedStock.name}
+            onClose={handleChartClose}
+          />
+        </div>
+      )}
+    </div>
   );
 }
