@@ -117,11 +117,19 @@ function applyManualHoldings(results: AccountBalance[]) {
   results.forEach((accResult) => {
     // 현재 계좌번호와 일치하는 매뉴얼 항목 필터링
     // (계좌번호 형식은 이미 숫자만 남게 정제되어 있으므로, 매뉴얼의 '-' 제거 후 비교)
-    const matchedItems = manualHoldings.filter(
-      (m) =>
-        String(m.accountNo).replace(/[^0-9]/g, "") ===
-        accResult.account.accountNo
-    );
+    // 계좌번호 추출: "47217543-01" -> "47217543" (앞 8자리만)
+    // KIS API의 accountNo는 8자리 숫자만 포함
+    const matchedItems = manualHoldings.filter((m) => {
+      const manualAccNo = String(m.accountNo).replace(/[^0-9]/g, "");
+      const manualAccNoPrefix = manualAccNo.slice(0, 8); // 앞 8자리만 추출
+      const kisAccNo = accResult.account.accountNo;
+
+      console.log(
+        `[Manual Match] Manual: ${manualAccNo} (prefix: ${manualAccNoPrefix}) vs KIS: ${kisAccNo}`
+      );
+
+      return manualAccNoPrefix === kisAccNo;
+    });
 
     if (matchedItems.length > 0) {
       console.log(
