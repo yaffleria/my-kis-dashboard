@@ -21,7 +21,7 @@ import type { DashboardBalance } from "@/types";
  */
 export default function DashboardPage() {
   const { balances, portfolioSummary, isLoading, error } = useDashboardStore();
-  const { refetch, isFetching } = useBalanceQuery();
+  const { refetch, isFetching } = useBalanceQuery({ pollingInterval: 60000 });
   const { formatCurrency, formatPercent } = useFormatters();
 
   // 선택된 계좌 상태 (null = 전체, 'accountNo-productCode' 형식)

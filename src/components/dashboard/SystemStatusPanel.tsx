@@ -1,9 +1,7 @@
 "use client";
 
 import type { PortfolioSummary } from "@/types";
-import { RefreshCw } from "lucide-react";
 import { TerminalPanel, DataField } from "@/components/terminal";
-import { useRefreshBalance } from "@/hooks/useBalance";
 
 /**
  * 시스템 상태 패널 컴포넌트
@@ -22,8 +20,6 @@ export function SystemStatusPanel({
   portfolioSummary,
   className = "",
 }: SystemStatusPanelProps) {
-  const { mutate: refreshBalance, isPending: isRefreshing } =
-    useRefreshBalance();
 
   return (
     <TerminalPanel
@@ -78,24 +74,7 @@ export function SystemStatusPanel({
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <button
-              onClick={() => refreshBalance()}
-              disabled={isRefreshing}
-              className="group relative w-12 h-12 flex items-center justify-center bg-slate-900/30 border border-slate-700 hover:bg-slate-800 hover:border-slate-500 hover:text-cyan-400 text-slate-500 transition-all cursor-pointer shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Refresh Balance Data"
-            >
-              <RefreshCw
-                className={`w-5 h-5 transition-transform group-hover:rotate-180 ${
-                  isRefreshing ? "animate-spin text-cyan-500" : ""
-                }`}
-              />
 
-              {/* Corner accents */}
-              <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-slate-700 group-hover:border-cyan-500/50 transition-colors" />
-              <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-slate-700 group-hover:border-cyan-500/50 transition-colors" />
-            </button>
-          </div>
         </div>
 
 
