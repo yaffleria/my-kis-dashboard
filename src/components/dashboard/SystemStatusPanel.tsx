@@ -31,8 +31,8 @@ export function SystemStatusPanel({
       className={`h-auto shrink-0 ${className}`}
     >
       {/* Metrics & Animated Art */}
-      <div className="flex flex-col min-h-35">
-        <div className="flex justify-between items-center mb-4 mt-2">
+      <div className="">
+        <div className="flex justify-between items-center mt-2">
           <div className="flex gap-16">
             <DataField
               label="Invested Total Value"
