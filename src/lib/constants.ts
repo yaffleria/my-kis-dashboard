@@ -44,8 +44,6 @@ export const HOMEBREW_CHART_COLORS = [
 export const POLLING_INTERVALS = {
   /** 잔고 조회 기본 간격 */
   BALANCE: 10000,
-  /** 시스템 로그 폴링 간격 */
-  LOGS: 3000,
   /** 환율 캐시 유효 기간 */
   EXCHANGE_RATE: 300,
 } as const;
@@ -55,8 +53,6 @@ export const POLLING_INTERVALS = {
  */
 export const API_ENDPOINTS = {
   BALANCE: "/api/balance",
-  LOGS: "/api/logs",
-  STOCK_CHART: "/api/stock-chart",
 } as const;
 
 /**

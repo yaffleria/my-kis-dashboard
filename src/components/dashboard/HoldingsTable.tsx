@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { FixedSizeList as List } from "react-window";
 import type { DashboardBalance, HoldingsRow } from "@/types";
 import { SortIcon, type SortConfig } from "@/components/ui";
-import { StockPriceChart } from "./StockPriceChart";
+
 
 /**
  * 보유 종목 테이블 컴포넌트
@@ -13,7 +13,6 @@ import { StockPriceChart } from "./StockPriceChart";
  */
 
 const ROW_HEIGHT = 32; // 각 행의 높이 (px)
-const CHART_HEIGHT = 380; // 차트 영역 높이 (px)
 const HEADER_HEIGHT = 36; // 헤더 높이 (px)
 
 export interface HoldingsTableProps {
@@ -34,12 +33,6 @@ export function HoldingsTable({
     key: "evaluationAmount",
     direction: "desc",
   });
-
-  // 선택된 종목 (차트 표시용)
-  const [selectedStock, setSelectedStock] = useState<{
-    code: string;
-    name: string;
-  } | null>(null);
 
   // 컨테이너 높이 측정
   const containerRef = useRef<HTMLDivElement>(null);
@@ -171,30 +164,10 @@ export function HoldingsTable({
     },
   ];
 
-  const handleRowClick = (row: HoldingsRow) => {
-    // 같은 종목 클릭 시 토글
-    if (selectedStock?.code === row.stockCode) {
-      setSelectedStock(null);
-    } else {
-      setSelectedStock({
-        code: row.stockCode,
-        name: row.stockName,
-      });
-    }
-  };
-
-  const handleChartClose = () => {
-    setSelectedStock(null);
-  };
-
-  // 리스트 영역 높이 계산 (차트 표시 시 차트 높이만큼 줄임)
+  // 리스트 영역 높이 계산
   const listHeight = useMemo(() => {
-    const availableHeight = containerHeight - HEADER_HEIGHT;
-    if (selectedStock) {
-      return Math.max(availableHeight - CHART_HEIGHT, 100);
-    }
-    return availableHeight;
-  }, [containerHeight, selectedStock]);
+    return containerHeight - HEADER_HEIGHT;
+  }, [containerHeight]);
 
   // 가상화 행 렌더러
   const RowRenderer = ({
@@ -206,23 +179,15 @@ export function HoldingsTable({
   }) => {
     const row = sortedRows[index];
     const isPos = row.profitLossRate >= 0;
-    const isSelected = selectedStock?.code === row.stockCode;
-
     return (
       <div
         style={style}
-        className={`flex items-center border-b border-terminal-border/30 hover:bg-brew-green/10 transition-colors cursor-pointer font-mono text-sm ${
-          isSelected ? "bg-brew-green/15 border-l-2 border-l-brew-green" : ""
-        }`}
-        onClick={() => handleRowClick(row)}
+        className="flex items-center border-b border-terminal-border/30 hover:bg-brew-green/10 transition-colors font-mono text-sm"
       >
         <div
-          className={`font-bold truncate px-1 ${
-            isSelected ? "text-brew-neonGreen" : "text-brew-green"
-          }`}
+          className="font-bold truncate px-1 text-brew-green"
           style={{ width: columns[0].width }}
         >
-          {isSelected && <span className="mr-1">▸</span>}
           {row.stockName}
         </div>
         <div
@@ -296,18 +261,7 @@ export function HoldingsTable({
       </div>
 
       {/* Stock Price Chart (하단 고정, 선택된 종목이 있을 때만 표시) */}
-      {selectedStock && (
-        <div
-          className="border-t border-terminal-border bg-terminal-bg shrink-0"
-          style={{ height: CHART_HEIGHT }}
-        >
-          <StockPriceChart
-            stockCode={selectedStock.code}
-            stockName={selectedStock.name}
-            onClose={handleChartClose}
-          />
-        </div>
-      )}
+
     </div>
   );
 }
