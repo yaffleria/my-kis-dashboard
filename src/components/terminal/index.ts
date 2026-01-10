@@ -5,4 +5,4 @@
 export { TerminalHeader, type TerminalHeaderProps } from './TerminalHeader'
 export { TerminalPanel, type TerminalPanelProps } from './TerminalPanel'
 export { DataField, type DataFieldProps } from './DataField'
-export { MatrixRain } from './MatrixRain'
+

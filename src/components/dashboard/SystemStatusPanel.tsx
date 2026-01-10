@@ -2,7 +2,7 @@
 
 import type { PortfolioSummary } from "@/types";
 import { RefreshCw } from "lucide-react";
-import { TerminalPanel, DataField, MatrixRain } from "@/components/terminal";
+import { TerminalPanel, DataField } from "@/components/terminal";
 import { useRefreshBalance } from "@/hooks/useBalance";
 
 /**
@@ -98,10 +98,7 @@ export function SystemStatusPanel({
           </div>
         </div>
 
-        {/* Dynamic Space Filler: Matrix Rain */}
-        <div className="flex-1 relative flex flex-col justify-end overflow-hidden group">
-          <MatrixRain />
-        </div>
+
       </div>
     </TerminalPanel>
   );
