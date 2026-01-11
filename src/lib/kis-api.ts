@@ -134,7 +134,10 @@ async function getAccessToken(
         where: { type: `kis_${appKey}` },
       });
 
-      if (dbToken && dbToken.expiresAt.getTime() > Date.now()) {
+      // 3. 토큰이 없거나 만료된 경우 (또는 만료 임박 - 1분 버퍼): KIS API 호출
+      // 만료시간이 현재시간 + 1분보다 미래여야 유효함
+      const BUFFER_TIME = 60 * 1000;
+      if (dbToken && dbToken.expiresAt.getTime() > Date.now() + BUFFER_TIME) {
         return dbToken.token;
       }
 
@@ -263,6 +266,22 @@ export async function inquireBalance(
 }
 
 /**
+ * 보유 종목 아이템 인터페이스 (국내/해외 공통화)
+ */
+export interface KisHoldingItem {
+  pdno: string; // 종목번호
+  prdt_name: string; // 상품명
+  hldg_qty: string; // 보유수량
+  pchs_avg_pric: string; // 매입평균가
+  prpr: string; // 현재가
+  evlu_amt: string; // 평가금액
+  evlu_pfls_amt: string; // 평가손익금액
+  evlu_pfls_rt: string; // 평가손익율
+  pchs_amt: string; // 매입금액
+  [key: string]: unknown; // 그 외 필드 허용
+}
+
+/**
  * 통합 계좌 조회 함수 (Smart Retry 포함)
  */
 export async function getAccountBalance(
@@ -302,7 +321,7 @@ export async function getAccountBalance(
     ]);
 
     // 국내 잔고 매핑
-    const domHoldings = domRes.output1 as unknown[];
+    const domHoldings = domRes.output1 as KisHoldingItem[];
 
     const USD_KRW_RATE = await getExchangeRate();
 

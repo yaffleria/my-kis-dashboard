@@ -206,7 +206,7 @@ export function HoldingsTable({
     return (
       <div
         style={style}
-        className="grid grid-cols-12 items-center border-b border-terminal-border/30 hover:bg-brew-green/10 transition-colors font-mono text-sm px-1 min-h-[32px]"
+        className="grid grid-cols-12 items-center border-b border-terminal-border/30 hover:bg-brew-green/10 transition-colors font-mono text-sm px-1 min-h-8"
       >
         <div
           className={`font-bold truncate px-1 text-brew-green ${columns[0].className}`}

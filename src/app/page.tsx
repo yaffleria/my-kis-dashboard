@@ -128,6 +128,7 @@ export default function DashboardPage() {
                 title="Active Accounts"
                 className="flex-1 min-h-0"
                 scrollable
+                isLoading={isLoading || isFetching}
               >
                 <ActivePortfolios
                   balances={balances as DashboardBalance[]}
@@ -142,7 +143,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Holdings Matrix Column */}
-            <div className="flex flex-col gap-4 w-full md:flex-1 min-h-[400px] md:min-h-0 md:h-full">
+            <div className="flex flex-col gap-4 w-full md:flex-1 min-h-100 md:min-h-0 md:h-full">
               <TerminalPanel
                 title={
                   selectedAccountKey
@@ -153,6 +154,7 @@ export default function DashboardPage() {
                 }
                 className="flex-1 min-h-0"
                 scrollable
+                isLoading={isLoading || isFetching}
               >
                 <HoldingsTable
                   balances={filteredBalances}

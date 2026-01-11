@@ -15,6 +15,8 @@ export interface TerminalPanelProps {
   headerAction?: React.ReactNode;
   /** 스크롤 가능 여부 */
   scrollable?: boolean;
+  /** 로딩 상태 여부 */
+  isLoading?: boolean;
 }
 
 export function TerminalPanel({
@@ -23,11 +25,12 @@ export function TerminalPanel({
   className = "",
   scrollable = false,
   headerAction,
+  isLoading = false,
 }: TerminalPanelProps) {
   return (
     <Card
       className={cn(
-        "border border-brew-green bg-terminal-bg flex flex-col rounded-none shadow-none",
+        "border border-brew-green bg-terminal-bg flex flex-col rounded-none shadow-none relative",
         className
       )}
     >
@@ -39,10 +42,21 @@ export function TerminalPanel({
       </CardHeader>
       <CardContent
         className={cn(
-          "p-3 flex-1",
+          "p-3 flex-1 relative min-h-[100px]",
           scrollable ? "overflow-y-auto custom-scrollbar" : "overflow-hidden"
         )}
       >
+        {/* Loading Overlay */}
+        {isLoading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-terminal-bg/80 backdrop-blur-[1px]">
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-brew-green border-t-transparent" />
+              <span className="text-xs text-brew-green animate-pulse">
+                LOADING...
+              </span>
+            </div>
+          </div>
+        )}
         {children}
       </CardContent>
     </Card>
