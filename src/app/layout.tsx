@@ -91,7 +91,7 @@ export default function RootLayout({
               }
             })()}
           />
-          <main className="h-screen w-full p-12 overflow-hidden flex flex-col">
+          <main className="w-full min-h-screen md:h-screen p-2 md:p-6 lg:p-12 flex flex-col overflow-y-auto md:overflow-hidden">
             {children}
           </main>
           <CockpitModal />

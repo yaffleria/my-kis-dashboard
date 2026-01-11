@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  getAccountBalance,
-  parseNumber,
-  maskAccountNo,
-  getExchangeRate,
-} from "@/lib/kis-api";
+import { getAccountBalance, parseNumber, maskAccountNo } from "@/lib/kis-api";
 import { serverLog } from "@/lib/server-logger";
 export const dynamic = "force-dynamic"; // 캐싱 방지
 import type {
@@ -37,24 +32,43 @@ function getAccountsFromEnv(): Account[] {
     const cleanJson = accountsJson.replace(/,\s*([\]}])/g, "$1");
     const parsed = JSON.parse(cleanJson);
     if (Array.isArray(parsed)) {
-      return parsed.map((acc) => {
+      return parsed.flatMap((acc) => {
         // 계좌번호 정제: 문자열 변환, 하이픈 및 공백 제거 (숫자만 남김)
         const rawAccountNo = String(acc.accountNo || "");
         const accountNo = rawAccountNo.replace(/[^0-9]/g, "");
 
-        // 상품코드 정제: 문자열 변환, 공백 제거, 1자리인 경우 2자리로 패딩
-        let productCode = String(acc.productCode || "01").trim();
-        if (productCode.length === 1)
-          productCode = productCode.padStart(2, "0");
+        // 상품코드 처리: 배열이든 단일값이든 배열로 통일
+        const rawProductCodes = acc.productCode
+          ? Array.isArray(acc.productCode)
+            ? acc.productCode
+            : [acc.productCode]
+          : ["01"];
 
-        return {
-          accountNo,
-          productCode: productCode as AccountType,
-          appKey: acc.appKey,
-          appSecret: acc.appSecret,
-          accountName: acc.accountName || acc.name || "계좌",
-          isPension: false,
-        };
+        // 계좌명 처리: 배열이든 단일값이든 배열로 통일
+        const rawAccountNames = acc.accountName
+          ? Array.isArray(acc.accountName)
+            ? acc.accountName
+            : [acc.accountName]
+          : [];
+
+        return rawProductCodes.map((pc: string | number, idx: number) => {
+          let productCode = String(pc).trim();
+          if (productCode.length === 1)
+            productCode = productCode.padStart(2, "0");
+
+          // 해당 인덱스의 계좌명이 없으면 첫 번째 계좌명이나 기본값 사용
+          const accountName =
+            rawAccountNames[idx] || rawAccountNames[0] || acc.name || "계좌";
+
+          return {
+            accountNo,
+            productCode: productCode as AccountType,
+            appKey: acc.appKey,
+            appSecret: acc.appSecret,
+            accountName: accountName,
+            isPension: ["22", "29"].includes(productCode), // 22: 연금저축, 29: IRP
+          };
+        });
       });
     }
   } catch (err) {
@@ -82,6 +96,7 @@ function getAccountsFromEnv(): Account[] {
  */
 interface ManualHolding {
   accountNo: string;
+  productCode: string; // Combined account key separation requested by user
   code: string;
   name: string;
   qty: number;
@@ -115,20 +130,30 @@ function applyManualHoldings(results: AccountBalance[]) {
   }
 
   results.forEach((accResult) => {
-    // 현재 계좌번호와 일치하는 매뉴얼 항목 필터링
-    // (계좌번호 형식은 이미 숫자만 남게 정제되어 있으므로, 매뉴얼의 '-' 제거 후 비교)
-    // 계좌번호 추출: "47217543-01" -> "47217543" (앞 8자리만)
-    // KIS API의 accountNo는 8자리 숫자만 포함
+    // 현재 계좌(계좌번호 + 상품코드)와 완벽히 일치하는 매뉴얼 항목 필터링
     const matchedItems = manualHoldings.filter((m) => {
+      // 1. 계좌번호 정제 및 비교 (숫자만)
       const manualAccNo = String(m.accountNo).replace(/[^0-9]/g, "");
-      const manualAccNoPrefix = manualAccNo.slice(0, 8); // 앞 8자리만 추출
       const kisAccNo = accResult.account.accountNo;
 
-      console.log(
-        `[Manual Match] Manual: ${manualAccNo} (prefix: ${manualAccNoPrefix}) vs KIS: ${kisAccNo}`
+      // 2. 상품코드 정제 및 비교 (2자리 패딩)
+      const manualProdCode = String(m.productCode || "")
+        .trim()
+        .padStart(2, "0");
+      const kisProdCode = String(accResult.account.productCode).padStart(
+        2,
+        "0"
       );
 
-      return manualAccNoPrefix === kisAccNo;
+      const isAccountMatch = manualAccNo === kisAccNo;
+      const isProductMatch = manualProdCode === kisProdCode;
+
+      if (isAccountMatch && isProductMatch) {
+        // debug logging for match (optional)
+        // console.log(`[Manual Match] ${m.name} -> ${kisAccNo}-${kisProdCode}`);
+      }
+
+      return isAccountMatch && isProductMatch;
     });
 
     if (matchedItems.length > 0) {
@@ -137,8 +162,14 @@ function applyManualHoldings(results: AccountBalance[]) {
       );
 
       const newHoldings: StockHolding[] = matchedItems.map((item) => {
-        const evalAmt = item.price * item.qty * item.exchangeRate;
-        const buyAmt = item.buyPrice * item.qty * item.exchangeRate;
+        // 환율 적용 로직 개선:
+        // 1. KRW인 경우 무조건 1 적용
+        // 2. exchangeRate가 없거나 유효하지 않으면 1 적용
+        const appliedRate =
+          item.currency === "KRW" ? 1 : item.exchangeRate || 1;
+
+        const evalAmt = item.price * item.qty * appliedRate;
+        const buyAmt = item.buyPrice * item.qty * appliedRate;
         const profitLossAmt = evalAmt - buyAmt;
         const profitLossRt = buyAmt > 0 ? (profitLossAmt / buyAmt) * 100 : 0;
 
@@ -146,8 +177,8 @@ function applyManualHoldings(results: AccountBalance[]) {
           stockCode: item.code,
           stockName: item.name,
           quantity: item.qty,
-          buyAvgPrice: item.buyPrice * item.exchangeRate, // 원화 환산 단가
-          currentPrice: item.price * item.exchangeRate, // 원화 환산 현재가
+          buyAvgPrice: item.buyPrice * appliedRate, // 원화 환산 단가
+          currentPrice: item.price * appliedRate, // 원화 환산 현재가
           evaluationAmount: evalAmt,
           profitLossAmount: profitLossAmt,
           profitLossRate: profitLossRt,

@@ -5,7 +5,6 @@ import { FixedSizeList as List } from "react-window";
 import type { DashboardBalance, HoldingsRow } from "@/types";
 import { SortIcon, type SortConfig } from "@/components/ui";
 
-
 /**
  * 보유 종목 테이블 컴포넌트
  * - 가상화 스크롤 적용 (react-window)
@@ -141,26 +140,41 @@ export function HoldingsTable({
   };
 
   const columns = [
-    { key: "stockName", label: "SYMBOL", align: "left" as const, width: "35%" },
-    { key: "quantity", label: "QTY", align: "right" as const, width: "8%" },
+    {
+      key: "stockName",
+      label: "SYMBOL",
+      align: "left" as const,
+      className: "col-span-5 md:col-span-4 text-left",
+    },
+    {
+      key: "quantity",
+      label: "QTY",
+      align: "right" as const,
+      className: "hidden md:block md:col-span-1 text-right",
+    },
     {
       key: "currentPrice",
       label: "PRICE",
       align: "right" as const,
-      width: "17%",
+      className: "hidden md:block md:col-span-2 text-right",
     },
     {
       key: "evaluationAmount",
       label: "VALUE",
       align: "right" as const,
-      width: "17%",
+      className: "col-span-4 md:col-span-2 text-right",
     },
-    { key: "weight", label: "WGHT", align: "right" as const, width: "10%" },
+    {
+      key: "weight",
+      label: "WGHT",
+      align: "right" as const,
+      className: "hidden md:block md:col-span-1 text-right",
+    },
     {
       key: "profitLossRate",
       label: "ROI",
       align: "right" as const,
-      width: "13%",
+      className: "col-span-3 md:col-span-2 text-right",
     },
   ];
 
@@ -182,43 +196,29 @@ export function HoldingsTable({
     return (
       <div
         style={style}
-        className="flex items-center border-b border-terminal-border/30 hover:bg-brew-green/10 transition-colors font-mono text-sm"
+        className="grid grid-cols-12 items-center border-b border-terminal-border/30 hover:bg-brew-green/10 transition-colors font-mono text-sm px-1"
       >
         <div
-          className="font-bold truncate px-1 text-brew-green"
-          style={{ width: columns[0].width }}
+          className={`font-bold truncate px-1 text-brew-green ${columns[0].className}`}
         >
           {row.stockName}
         </div>
-        <div
-          className="text-right text-terminal-text px-1"
-          style={{ width: columns[1].width }}
-        >
+        <div className={`text-terminal-text px-1 ${columns[1].className}`}>
           {row.quantity}
         </div>
-        <div
-          className="text-right text-terminal-text px-1"
-          style={{ width: columns[2].width }}
-        >
+        <div className={`text-terminal-text px-1 ${columns[2].className}`}>
           {formatCurrency(row.currentPrice)}
         </div>
-        <div
-          className="text-right text-terminal-text px-1"
-          style={{ width: columns[3].width }}
-        >
+        <div className={`text-terminal-text px-1 ${columns[3].className}`}>
           {formatCurrency(row.evaluationAmount)}
         </div>
-        <div
-          className="text-right text-terminal-text px-1"
-          style={{ width: columns[4].width }}
-        >
+        <div className={`text-terminal-text px-1 ${columns[4].className}`}>
           {(row.weight || 0).toFixed(2)}%
         </div>
         <div
-          className={`text-right px-1 ${
-            isPos ? "text-brew-green" : "text-brew-red"
+          className={`px-1 ${isPos ? "text-brew-green" : "text-brew-red"} ${
+            columns[5].className
           }`}
-          style={{ width: columns[5].width }}
         >
           {formatPercent(row.profitLossRate)}
         </div>
@@ -227,19 +227,16 @@ export function HoldingsTable({
   };
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full">
+    <div ref={containerRef} className="flex flex-col h-full w-full">
       {/* 테이블 헤더 (고정) */}
       <div
-        className="flex items-center text-terminal-muted border-b border-terminal-border bg-terminal-bg z-10 text-sm"
+        className="grid grid-cols-12 items-center text-terminal-muted border-b border-terminal-border bg-terminal-bg z-10 text-sm px-1"
         style={{ height: HEADER_HEIGHT }}
       >
         {columns.map((col) => (
           <div
             key={col.key}
-            className={`py-2 px-1 cursor-pointer hover:text-brew-green transition-colors select-none ${
-              col.align === "right" ? "text-right" : ""
-            }`}
-            style={{ width: col.width }}
+            className={`py-2 px-1 cursor-pointer hover:text-brew-green transition-colors select-none ${col.className}`}
             onClick={() => handleSort(col.key)}
           >
             {col.label} <SortIcon colKey={col.key} sortConfig={sortConfig} />
@@ -261,7 +258,6 @@ export function HoldingsTable({
       </div>
 
       {/* Stock Price Chart (하단 고정, 선택된 종목이 있을 때만 표시) */}
-
     </div>
   );
 }

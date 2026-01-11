@@ -1,6 +1,12 @@
 /**
  * 공통 유틸리티 함수
  */
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 /**
  * 계좌번호 마스킹 처리
@@ -8,11 +14,11 @@
  * @example maskAccountNo('12345678') // '123****78'
  */
 export function maskAccountNo(accNo: string): string {
-  if (!accNo) return ''
-  if (accNo.startsWith('MANUAL_')) return 'Manual'
-  const clean = accNo.replace(/[^0-9]/g, '')
-  if (clean.length <= 5) return clean
-  return `${clean.substring(0, 3)}****${clean.substring(clean.length - 2)}`
+  if (!accNo) return "";
+  if (accNo.startsWith("MANUAL_")) return "Manual";
+  const clean = accNo.replace(/[^0-9]/g, "");
+  if (clean.length <= 5) return clean;
+  return `${clean.substring(0, 3)}****${clean.substring(clean.length - 2)}`;
 }
 
 /**
@@ -20,11 +26,11 @@ export function maskAccountNo(accNo: string): string {
  * @example formatCurrency(1234567) // '₩1,234,567'
  */
 export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('ko-KR', {
-    style: 'currency',
-    currency: 'KRW',
+  return new Intl.NumberFormat("ko-KR", {
+    style: "currency",
+    currency: "KRW",
     maximumFractionDigits: 0,
-  }).format(value)
+  }).format(value);
 }
 
 /**
@@ -33,8 +39,8 @@ export function formatCurrency(value: number): string {
  * @example formatPercent(-5.67) // '-5.67%'
  */
 export function formatPercent(value: number, decimals = 2): string {
-  const sign = value >= 0 ? '+' : ''
-  return `${sign}${value.toFixed(decimals)}%`
+  const sign = value >= 0 ? "+" : "";
+  return `${sign}${value.toFixed(decimals)}%`;
 }
 
 /**
@@ -42,7 +48,7 @@ export function formatPercent(value: number, decimals = 2): string {
  * @example formatNumber(1234567) // '1,234,567'
  */
 export function formatNumber(value: number): string {
-  return new Intl.NumberFormat('ko-KR').format(value)
+  return new Intl.NumberFormat("ko-KR").format(value);
 }
 
 /**
@@ -52,21 +58,23 @@ export function formatNumber(value: number): string {
  */
 export function formatCompactNumber(value: number): string {
   if (Math.abs(value) >= 100000000) {
-    return `${(value / 100000000).toFixed(1)}억`
+    return `${(value / 100000000).toFixed(1)}억`;
   }
   if (Math.abs(value) >= 10000) {
-    return `${(value / 10000).toFixed(1)}만`
+    return `${(value / 10000).toFixed(1)}만`;
   }
-  return value.toLocaleString('ko-KR')
+  return value.toLocaleString("ko-KR");
 }
 
 /**
  * 값의 변화 타입 판별
  */
-export function getChangeType(value: number): 'positive' | 'negative' | 'neutral' {
-  if (value > 0) return 'positive'
-  if (value < 0) return 'negative'
-  return 'neutral'
+export function getChangeType(
+  value: number
+): "positive" | "negative" | "neutral" {
+  if (value > 0) return "positive";
+  if (value < 0) return "negative";
+  return "neutral";
 }
 
 /**
@@ -74,7 +82,7 @@ export function getChangeType(value: number): 'positive' | 'negative' | 'neutral
  * @example parseNumber('1,234,567') // 1234567
  */
 export function parseNumber(value: string | undefined | null): number {
-  if (!value) return 0
-  const num = parseFloat(value.replace(/,/g, ''))
-  return isNaN(num) ? 0 : num
+  if (!value) return 0;
+  const num = parseFloat(value.replace(/,/g, ""));
+  return isNaN(num) ? 0 : num;
 }

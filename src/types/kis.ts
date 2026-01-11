@@ -3,7 +3,7 @@
 /**
  * 계좌 타입 정의
  */
-export type AccountType = "01"; // 종합위탁계좌
+export type AccountType = string; // "01": 종합위탁, "22": 연금저축, "29": IRP 등
 
 /**
  * 계좌 정보

@@ -4,3 +4,8 @@
 
 export { SortIcon, type SortConfig, type SortIconProps } from "./SortIcon";
 export { CockpitModal } from "./CockpitModal";
+export * from "./button";
+export * from "./card";
+export * from "./table";
+export * from "./skeleton";
+export * from "./switch";

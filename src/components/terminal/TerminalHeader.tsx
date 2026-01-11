@@ -5,21 +5,23 @@
 
 export interface TerminalHeaderProps {
   /** 헤더 타이틀 */
-  title: string
+  title: string;
   /** IP 주소 */
-  ip: string
+  ip: string;
   /** 시스템 상태 */
-  status: string
+  status: string;
 }
 
 export function TerminalHeader({ title, ip, status }: TerminalHeaderProps) {
   return (
-    <div className="border border-brew-green bg-terminal-bg p-1 px-3 mb-6 flex justify-between items-center text-brew-green font-mono select-none text-sm shrink-0">
-      <div className="font-bold tracking-wider uppercase px-2 bg-brew-green text-terminal-bg">{title}</div>
+    <div className="border border-brew-green bg-terminal-bg p-1 px-3 mb-2 md:mb-6 flex justify-between items-center text-brew-green font-mono select-none text-sm shrink-0">
+      <div className="font-bold tracking-wider uppercase px-2 bg-brew-green text-terminal-bg">
+        {title}
+      </div>
       <div className="flex gap-4 text-xs opacity-80">
         <span>STATUS: {status}</span>
         <span>IP: {ip}</span>
       </div>
     </div>
-  )
+  );
 }

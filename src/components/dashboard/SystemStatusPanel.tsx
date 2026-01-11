@@ -20,7 +20,6 @@ export function SystemStatusPanel({
   portfolioSummary,
   className = "",
 }: SystemStatusPanelProps) {
-
   return (
     <TerminalPanel
       title="System Status"
@@ -29,7 +28,7 @@ export function SystemStatusPanel({
       {/* Metrics & Animated Art */}
       <div className="">
         <div className="flex justify-between items-center mt-2">
-          <div className="flex gap-16">
+          <div className="flex flex-col md:flex-row gap-4 md:gap-16 justify-between md:justify-start w-full">
             <DataField
               label="Invested Total Value"
               value={
@@ -53,31 +52,21 @@ export function SystemStatusPanel({
                   : ""
               }
             />
-            {/* New UI for ROI */}
-            <div className="flex flex-col justify-center">
-              <div className="text-brew-green/70 text-[10px] uppercase mb-0.5">
-                Total Return
-              </div>
-              <div
-                className={`flex items-center px-3 py-1 rounded border ${
-                  (portfolioSummary?.totalProfitLossRate || 0) >= 0
-                    ? "border-brew-green/30 bg-brew-green/10 text-brew-green"
-                    : "border-brew-red/30 bg-brew-red/10 text-brew-red"
-                }`}
-              >
-                <span className="text-xl font-bold tracking-wider">
-                  {portfolioSummary
-                    ? formatPercent(portfolioSummary.totalProfitLossRate)
-                    : "0.00%"}
-                </span>
-              </div>
-            </div>
+            <DataField
+              label="Total Return"
+              value={
+                portfolioSummary
+                  ? formatPercent(portfolioSummary.totalProfitLossRate)
+                  : "0.00%"
+              }
+              className={
+                (portfolioSummary?.totalProfitLossRate || 0) < 0
+                  ? "text-brew-red"
+                  : ""
+              }
+            />
           </div>
-
-
         </div>
-
-
       </div>
     </TerminalPanel>
   );
