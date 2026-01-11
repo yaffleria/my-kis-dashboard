@@ -18,10 +18,6 @@ export function TerminalHeader({ title, ip, status }: TerminalHeaderProps) {
       <div className="font-bold tracking-wider uppercase px-2 bg-brew-green text-terminal-bg">
         {title}
       </div>
-      <div className="flex gap-4 text-xs opacity-80">
-        <span>STATUS: {status}</span>
-        <span>IP: {ip}</span>
-      </div>
     </div>
   );
 }

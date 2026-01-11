@@ -6,7 +6,6 @@ import { useDashboardStore, useAccountStore } from "@/store";
 import { useBalanceQuery, useFormatters } from "@/hooks";
 import {
   Button,
-  LoadingSpinner,
   TerminalHeader,
   TerminalPanel,
   SystemStatusPanel,
@@ -105,24 +104,12 @@ export default function DashboardPage() {
     );
   }
 
-  // 로딩 상태
-  if (isLoading && balances.length === 0) {
-    return (
-      <div className="h-screen w-full flex flex-col items-center justify-center text-brew-green font-mono bg-terminal-bg">
-        <LoadingSpinner />
-        <div className="mt-4 animate-pulse">
-          ESTABLISHING SECURE CONNECTION...
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="h-auto md:h-full bg-terminal-bg text-terminal-text font-mono flex flex-col items-center py-2 md:py-4 overflow-visible md:overflow-hidden">
       <div className="w-full px-2 md:w-[95%] lg:w-[80%] max-w-400 flex flex-col gap-2 md:gap-4 h-auto md:h-full">
         <TerminalHeader
           title="Blanc"
-          ip="127.0.0.1" // IP 조회 제거 또는 유지? 일단 심플하게
+          ip="127.0.0.1"
           status={isFetching ? "SYNCING..." : "ONLINE"}
         />
 
@@ -131,6 +118,7 @@ export default function DashboardPage() {
             formatCurrency={formatCurrency}
             formatPercent={formatPercent}
             portfolioSummary={visiblePortfolioSummary}
+            isLoading={isLoading || isFetching}
           />
 
           <div className="flex flex-col md:flex-row flex-1 gap-4 md:min-h-0">

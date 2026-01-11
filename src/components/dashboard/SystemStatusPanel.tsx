@@ -8,17 +8,22 @@ import { TerminalPanel, DataField } from "@/components/terminal";
  * 총 투자금액, 손익, ROI 바 차트 표시
  */
 
+import { LoadingSpinner } from "@/components"; // Add this import
+
 export interface SystemStatusPanelProps {
   formatCurrency: (val: number) => string;
   formatPercent: (val: number) => string;
   portfolioSummary: PortfolioSummary | null;
   className?: string;
+  isLoading?: boolean;
 }
+
 export function SystemStatusPanel({
   formatCurrency,
   formatPercent,
   portfolioSummary,
   className = "",
+  isLoading = false,
 }: SystemStatusPanelProps) {
   return (
     <TerminalPanel
@@ -26,7 +31,13 @@ export function SystemStatusPanel({
       className={`h-auto shrink-0 ${className}`}
     >
       {/* Metrics & Animated Art */}
-      <div className="">
+      <div className="relative">
+        {isLoading && (
+          <div className="absolute top-0 right-0 flex items-center gap-2 text-brew-green animate-pulse">
+            <span className="text-xs">SYNCING...</span>
+            <LoadingSpinner size="sm" />
+          </div>
+        )}
         <div className="flex justify-between items-center mt-2">
           <div className="flex flex-col md:flex-row gap-4 md:gap-16 justify-between md:justify-start w-full">
             <DataField
