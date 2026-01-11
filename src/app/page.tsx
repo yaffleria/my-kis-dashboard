@@ -158,7 +158,10 @@ export default function DashboardPage() {
                   balances={filteredBalances}
                   formatCurrency={formatCurrency}
                   formatPercent={formatPercent}
-                  portfolioTotalAsset={visiblePortfolioSummary?.totalAsset ?? 0}
+                  portfolioTotalAsset={filteredBalances.reduce(
+                    (sum, b) => sum + b.summary.totalAsset,
+                    0
+                  )}
                 />
               </TerminalPanel>
             </div>
