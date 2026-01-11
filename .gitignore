@@ -45,3 +45,4 @@ next-env.d.ts
 .kis_token.json
 
 /src/generated/prisma
+
