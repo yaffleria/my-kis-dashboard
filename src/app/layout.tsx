@@ -25,22 +25,24 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Blanc - Portfolio Dashboard",
     description: "한국투자증권 Open API를 활용한 실시간 계좌 모니터링 대시보드",
+    url: "./",
+    siteName: "Blanc Dashboard",
     images: [
       {
-        url: "/og-image.png",
+        url: "/favicon.png",
         width: 1024,
         height: 1024,
-        alt: "Blanc Terminal Dashboard",
+        alt: "Blanc Terminal Dashboard Icon",
       },
     ],
     type: "website",
     locale: "ko_KR",
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "Blanc - Portfolio Dashboard",
     description: "한국투자증권 Open API를 활용한 실시간 계좌 모니터링 대시보드",
-    images: ["/og-image.png"],
+    images: ["/favicon.png"],
   },
 };
 
