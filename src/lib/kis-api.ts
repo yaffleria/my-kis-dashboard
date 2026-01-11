@@ -617,6 +617,44 @@ export async function getStockDailyPrice(
 }
 
 /**
+ * 주식 현재가 시세 조회
+ * TR_ID: FHKST01010100
+ */
+export async function getStockCurrentPrice(
+  stockCode: string,
+  appKey: string,
+  appSecret: string
+): Promise<number> {
+  try {
+    const headers = await getHeaders("FHKST01010100", appKey, appSecret);
+
+    const response = await axios.get(
+      `${KIS_API_URL[ENV]}/uapi/domestic-stock/v1/quotations/inquire-price`,
+      {
+        headers,
+        params: {
+          FID_COND_MRKT_DIV_CODE: "J", // J: 주식, ETF, ETN
+          FID_INPUT_ISCD: stockCode,
+        },
+      }
+    );
+
+    if (response.data.rt_cd !== "0") {
+      console.warn(
+        `[API Warn] Stock Price (${stockCode}): ${response.data.msg1}`
+      );
+      return 0;
+    }
+
+    const price = parseInt(response.data.output.stck_prpr || "0", 10);
+    return price;
+  } catch (error) {
+    console.error(`[API Error] Fetching price for ${stockCode}`, error);
+    return 0;
+  }
+}
+
+/**
  * 해외주식 일별 시세 조회 API (해외주식 종목/지수/환율기간별시세)
  * TR_ID: FHKST03030100
  * Returns: 일봉 데이터 (OHLCV) - 더 많은 데이터 제공

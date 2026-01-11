@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { getAccountBalance, parseNumber, maskAccountNo } from "@/lib/kis-api";
+import {
+  getAccountBalance,
+  parseNumber,
+  maskAccountNo,
+  getStockCurrentPrice,
+} from "@/lib/kis-api";
 import { serverLog } from "@/lib/server-logger";
 export const dynamic = "force-dynamic"; // 캐싱 방지
 import type {
@@ -96,21 +101,24 @@ function getAccountsFromEnv(): Account[] {
  */
 interface ManualHolding {
   accountNo: string;
-  productCode: string; // Combined account key separation requested by user
+  productCode: string;
   code: string;
   name: string;
-  qty: number;
-  price: number;
-  buyPrice: number;
+  qty: number | string;
+  price?: number | string;
+  buyPrice: number | string;
   currency: string;
-  exchangeRate: number;
+  exchangeRate?: number | string;
 }
 
 /**
  * 매뉴얼 포트폴리오(환경변수) 처리 함수
  * 기존 results(KIS API 결과)에 매뉴얼 데이터를 병합하고 요약을 재계산
  */
-function applyManualHoldings(results: AccountBalance[]) {
+async function applyManualHoldings(
+  results: AccountBalance[],
+  allAccounts: Account[]
+) {
   const manualEnv = process.env.MANUAL_PORTFOLIO;
   if (!manualEnv) return results;
 
@@ -129,7 +137,8 @@ function applyManualHoldings(results: AccountBalance[]) {
     return results;
   }
 
-  results.forEach((accResult) => {
+  // 비동기 처리를 위해 forEach 대신 for...of 루프 사용
+  for (const accResult of results) {
     // 현재 계좌(계좌번호 + 상품코드)와 완벽히 일치하는 매뉴얼 항목 필터링
     const matchedItems = manualHoldings.filter((m) => {
       // 1. 계좌번호 정제 및 비교 (숫자만)
@@ -148,11 +157,6 @@ function applyManualHoldings(results: AccountBalance[]) {
       const isAccountMatch = manualAccNo === kisAccNo;
       const isProductMatch = manualProdCode === kisProdCode;
 
-      if (isAccountMatch && isProductMatch) {
-        // debug logging for match (optional)
-        // console.log(`[Manual Match] ${m.name} -> ${kisAccNo}-${kisProdCode}`);
-      }
-
       return isAccountMatch && isProductMatch;
     });
 
@@ -161,33 +165,115 @@ function applyManualHoldings(results: AccountBalance[]) {
         `[Manual Portfolio] Found ${matchedItems.length} items for account ${accResult.account.accountNo}`
       );
 
-      const newHoldings: StockHolding[] = matchedItems.map((item) => {
-        // 환율 적용 로직 개선:
-        // 1. KRW인 경우 무조건 1 적용
-        // 2. exchangeRate가 없거나 유효하지 않으면 1 적용
+      // 비동기 처리를 위해 for...of 사용
+      for (const item of matchedItems) {
+        // 안전한 숫자 변환 및 기본값 처리
+        const manualQty = Number(item.qty || 0);
+        const manualBuyPrice = Number(item.buyPrice || 0);
+
+        // buyPrice 누락 시 에러 로깅 후 스킵 (수익률 왜곡 방지)
+        if (manualBuyPrice <= 0) {
+          console.error(
+            `[Manual Portfolio Error] ${item.name} (${item.code}): 'buyPrice' is missing or zero. Skipping.`
+          );
+          continue;
+        }
+
+        let manualPrice = Number(item.price || 0);
+
+        // 환율 적용 로직: KRW이거나 환율 값이 없으면 1. 그 외에는 입력된 환율 적용
+        const rawRate = Number(item.exchangeRate || 0);
         const appliedRate =
-          item.currency === "KRW" ? 1 : item.exchangeRate || 1;
+          item.currency === "KRW" ? 1 : rawRate > 0 ? rawRate : 1;
 
-        const evalAmt = item.price * item.qty * appliedRate;
-        const buyAmt = item.buyPrice * item.qty * appliedRate;
-        const profitLossAmt = evalAmt - buyAmt;
-        const profitLossRt = buyAmt > 0 ? (profitLossAmt / buyAmt) * 100 : 0;
+        // 기존 holdings에서 동일 종목 찾기
+        const existingIndex = accResult.holdings.findIndex(
+          (h) => h.stockCode === item.code
+        );
 
-        return {
-          stockCode: item.code,
-          stockName: item.name,
-          quantity: item.qty,
-          buyAvgPrice: item.buyPrice * appliedRate, // 원화 환산 단가
-          currentPrice: item.price * appliedRate, // 원화 환산 현재가
-          evaluationAmount: evalAmt,
-          profitLossAmount: profitLossAmt,
-          profitLossRate: profitLossRt,
-          buyAmount: buyAmt,
-        };
-      });
+        if (existingIndex !== -1) {
+          // Case 1: 이미 존재하는 종목 -> 병합 (Merge)
+          const existing = accResult.holdings[existingIndex];
 
-      // 기존 holdings에 추가
-      accResult.holdings = [...accResult.holdings, ...newHoldings];
+          // 1. 수량 합산
+          const totalQty = existing.quantity + manualQty;
+
+          // 2. 매입금액 합산
+          const manualBuyAmt = manualBuyPrice * manualQty * appliedRate;
+          const totalBuyAmt = existing.buyAmount + manualBuyAmt;
+
+          // 3. 평가금액 재계산 (현재가는 API 데이터인 existing.currentPrice 신뢰)
+          const currentPrice = existing.currentPrice;
+          const totalEvalAmt = currentPrice * totalQty;
+
+          // 4. 손익 재계산
+          const totalProfitLossAmt = totalEvalAmt - totalBuyAmt;
+          const totalProfitLossRt =
+            totalBuyAmt > 0 ? (totalProfitLossAmt / totalBuyAmt) * 100 : 0;
+          const newBuyAvgPrice = totalQty > 0 ? totalBuyAmt / totalQty : 0;
+
+          // 업데이트
+          accResult.holdings[existingIndex] = {
+            ...existing,
+            quantity: totalQty,
+            buyAmount: totalBuyAmt,
+            evaluationAmount: totalEvalAmt,
+            profitLossAmount: totalProfitLossAmt,
+            profitLossRate: totalProfitLossRt,
+            buyAvgPrice: newBuyAvgPrice,
+          };
+
+          console.log(
+            `[Manual Merge] Merged ${item.name} (${item.code}): Qty ${existing.quantity}->${totalQty}, BuyAmt +${manualBuyAmt}`
+          );
+        } else {
+          // Case 2: 없는 종목 -> 신규 추가
+          // Price가 없으면 API 조회 시도 (단, KRW인 경우에만)
+          if (manualPrice === 0 && item.currency === "KRW") {
+            // 해당 계좌의 인증키 찾기
+            const accountInfo = allAccounts.find(
+              (a) =>
+                a.accountNo === accResult.account.accountNo &&
+                a.productCode === accResult.account.productCode
+            );
+
+            // appKey/Secret 확보 (개별설정 -> 전역설정)
+            let appKey = accountInfo?.appKey;
+            let appSecret = accountInfo?.appSecret;
+            if (!appKey) appKey = process.env.KIS_APP_KEY;
+            if (!appSecret) appSecret = process.env.KIS_APP_SECRET;
+
+            if (appKey && appSecret) {
+              // API로 현재가 조회
+              manualPrice = await getStockCurrentPrice(
+                item.code,
+                appKey,
+                appSecret
+              );
+              console.log(
+                `[Manual Price Fetch] ${item.name} (${item.code}): Fetched Price=${manualPrice}`
+              );
+            }
+          }
+
+          const evalAmt = manualPrice * manualQty * appliedRate;
+          const buyAmt = manualBuyPrice * manualQty * appliedRate;
+          const profitLossAmt = evalAmt - buyAmt;
+          const profitLossRt = buyAmt > 0 ? (profitLossAmt / buyAmt) * 100 : 0;
+
+          accResult.holdings.push({
+            stockCode: item.code,
+            stockName: item.name,
+            quantity: manualQty,
+            buyAvgPrice: manualBuyPrice * appliedRate,
+            currentPrice: manualPrice * appliedRate,
+            evaluationAmount: evalAmt,
+            profitLossAmount: profitLossAmt,
+            profitLossRate: profitLossRt,
+            buyAmount: buyAmt,
+          });
+        }
+      }
 
       // Summary 재계산
       const totalEvaluation = accResult.holdings.reduce(
@@ -214,7 +300,7 @@ function applyManualHoldings(results: AccountBalance[]) {
         totalAsset: accResult.summary.depositAmount + totalEvaluation, // 예수금 + 평가금
       };
     }
-  });
+  }
 
   return results;
 }
@@ -419,7 +505,7 @@ export async function POST(request: Request) {
     }
 
     // Manual Portfolio 적용
-    applyManualHoldings(results);
+    await applyManualHoldings(results, envAccounts);
 
     return NextResponse.json({
       success: true,
@@ -593,7 +679,7 @@ export async function GET() {
     }
 
     // Manual Portfolio 적용
-    applyManualHoldings(results);
+    await applyManualHoldings(results, envAccounts);
 
     // 전체 요약 로그
     const totalEval = results.reduce(

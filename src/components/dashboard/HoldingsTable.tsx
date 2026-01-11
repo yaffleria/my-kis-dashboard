@@ -237,10 +237,7 @@ export function HoldingsTable({
   };
 
   return (
-    <div
-      ref={containerRef}
-      className="flex flex-col h-full w-full min-w-[700px]"
-    >
+    <div ref={containerRef} className="flex flex-col h-full w-full min-w-175">
       {/* 테이블 헤더 (고정) */}
       <div
         className="grid grid-cols-12 items-center text-terminal-muted border-b border-terminal-border bg-terminal-bg z-10 text-sm px-1 shrink-0"
