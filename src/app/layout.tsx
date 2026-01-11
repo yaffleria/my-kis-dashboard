@@ -82,10 +82,15 @@ export default function RootLayout({
                 if (!Array.isArray(parsed)) return undefined;
                 // appKey, appSecret 제거 (보안)
                 const sanitized = parsed.map((acc: Record<string, unknown>) => {
-                  const { appKey, appSecret, ...rest } = acc;
-                  void appKey;
-                  void appSecret;
-                  return rest;
+                  // 허용된 필드만 명시적으로 추출 (Allow-list 방식)
+                  return {
+                    accountNo: acc.accountNo,
+                    productCode: acc.productCode,
+                    accountName: acc.accountName || acc.name,
+                    isPension:
+                      acc.isPension ??
+                      ["22", "29"].includes(String(acc.productCode || "")),
+                  };
                 });
                 return JSON.stringify(sanitized);
               } catch {

@@ -240,11 +240,16 @@ export async function POST(request: Request) {
     for (const account of accounts) {
       if (account.isManual || account.accountNo.startsWith("MANUAL_")) continue;
 
-      // 보안: 민감 정보 분리 및 사용자 키 우선 사용 (없으면 전역 키 Fallback)
-      const { appKey: _ak, appSecret: _as, ...safeAccount } = account;
+      // 보안: 민감 정보 노출 방지를 위해 필요한 필드만 선택 (Allow-list)
+      const safeAccount = {
+        accountNo: account.accountNo,
+        productCode: account.productCode,
+        accountName: account.accountName,
+        isPension: account.isPension,
+      };
 
-      let appKey = _ak;
-      let appSecret = _as;
+      let appKey = account.appKey;
+      let appSecret = account.appSecret;
 
       // 키가 없으면 환경변수 매칭 시도
       if (!appKey || !appSecret) {
@@ -455,10 +460,15 @@ export async function GET() {
     const results: AccountBalance[] = [];
 
     for (const account of envAccounts) {
-      // 보안: 민감 정보 분리 및 사용자 키 우선 사용 (없으면 전역 키 Fallback)
-      const { appKey: _ak, appSecret: _as, ...safeAccount } = account;
-      const appKey = _ak || process.env.KIS_APP_KEY;
-      const appSecret = _as || process.env.KIS_APP_SECRET;
+      // 보안: 민감 정보 노출 방지를 위해 필요한 필드만 선택 (Allow-list)
+      const safeAccount = {
+        accountNo: account.accountNo,
+        productCode: account.productCode,
+        accountName: account.accountName,
+        isPension: account.isPension,
+      };
+      const appKey = account.appKey || process.env.KIS_APP_KEY;
+      const appSecret = account.appSecret || process.env.KIS_APP_SECRET;
 
       try {
         if (!appKey || !appSecret) {
