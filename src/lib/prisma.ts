@@ -6,11 +6,13 @@ import { PrismaPg } from "@prisma/adapter-pg";
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 const connectionString = process.env.POSTGRES_PRISMA_URL;
+const rawCert = process.env.SUPABASE_CA_CERT || "";
+const caCert = rawCert.replace(/\\n/g, "\n");
 
 const pool = new Pool({
   connectionString,
   ssl: {
-    rejectUnauthorized: false,
+    ca: caCert,
   },
 });
 const adapter = new PrismaPg(pool);
