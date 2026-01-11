@@ -258,7 +258,9 @@ export async function inquireBalance(
       console.error(
         `[Network Error] Stock Balance (${accountNo}-${productCode}): status=${
           error.response.status
-        } data=${JSON.stringify(error.response.data)}`
+        } msg=${error.response.data?.msg1 || "Unknown"} code=${
+          error.response.data?.rt_cd || "Unknown"
+        }`
       );
     }
     throw error;
@@ -454,7 +456,7 @@ export async function inquireOverseasBalance(
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       console.error(
-        `[Network Error] Overseas Balance (${accountNo}-${productCode}): status=${error.response.status}`
+        `[Network Error] Overseas Balance (${accountNo}-${productCode}): status=${error.response.status} msg=${error.response.data?.msg1} code=${error.response.data?.rt_cd}`
       );
     }
     throw error;
@@ -609,7 +611,9 @@ export async function getStockDailyPrice(
       console.error(
         `[Network Error] Stock Daily Price (${stockCode}): status=${
           error.response.status
-        } data=${JSON.stringify(error.response.data)}`
+        } msg=${error.response.data?.msg1 || "Unknown"} code=${
+          error.response.data?.rt_cd || "Unknown"
+        }`
       );
     }
     throw error;
@@ -757,7 +761,9 @@ export async function getOverseasDailyPrice(
       console.error(
         `[Network Error] Overseas Daily Price (${stockCode}): status=${
           error.response.status
-        } data=${JSON.stringify(error.response.data)}`
+        } msg=${error.response.data?.msg1 || "Unknown"} code=${
+          error.response.data?.rt_cd || "Unknown"
+        }`
       );
     }
     throw error;
