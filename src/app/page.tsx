@@ -13,6 +13,14 @@ import {
   HoldingsTable,
 } from "@/components";
 import type { DashboardBalance, PortfolioSummary } from "@/types";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Wallet } from "lucide-react";
 
 /**
  * 대시보드 메인 페이지
@@ -121,9 +129,45 @@ export default function DashboardPage() {
             isLoading={isLoading || isFetching}
           />
 
+          {/* Mobile Active Accounts Toggle */}
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full border-brew-green text-brew-green hover:bg-brew-green/20 rounded-none h-12"
+                >
+                  <Wallet className="mr-2 h-4 w-4" />
+                  VIEW ACTIVE ACCOUNTS ({balances.length})
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="left"
+                className="bg-terminal-bg border-r-brew-green w-[85vw] sm:w-[400px] p-0"
+              >
+                <SheetHeader className="border-b border-brew-green p-4 bg-brew-green/10">
+                  <SheetTitle className="text-brew-green font-mono text-left">
+                    ACTIVE ACCOUNTS
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="h-full overflow-y-auto p-4 pb-20 custom-scrollbar">
+                  <ActivePortfolios
+                    balances={balances as DashboardBalance[]}
+                    formatCurrency={formatCurrency}
+                    formatPercent={formatPercent}
+                    selectedAccountKey={selectedAccountKey}
+                    onSelectAccount={setSelectedAccountKey}
+                    hiddenAccountKeys={hiddenAccountKeys}
+                    onToggleAccount={toggleAccountVisibility}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+
           <div className="flex flex-col md:flex-row gap-4 min-h-0 md:flex-1">
-            {/* Active Accounts Column */}
-            <div className="flex flex-col gap-4 w-full md:w-80 lg:w-96 shrink-0 min-h-0 md:h-full">
+            {/* Active Accounts Column - Desktop Only */}
+            <div className="hidden md:flex flex-col gap-4 w-full md:w-80 lg:w-96 shrink-0 min-h-0 md:h-full">
               <TerminalPanel
                 title="Active Accounts"
                 className="flex-1 min-h-0"

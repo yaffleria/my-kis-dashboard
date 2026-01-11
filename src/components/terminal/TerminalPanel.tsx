@@ -42,7 +42,7 @@ export function TerminalPanel({
       </CardHeader>
       <CardContent
         className={cn(
-          "p-3 flex-1 relative min-h-[100px]",
+          "p-3 flex-1 relative",
           scrollable ? "overflow-y-auto custom-scrollbar" : "overflow-hidden"
         )}
       >

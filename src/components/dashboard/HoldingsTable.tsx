@@ -144,37 +144,37 @@ export function HoldingsTable({
       key: "stockName",
       label: "SYMBOL",
       align: "left" as const,
-      className: "col-span-5 md:col-span-4 text-left",
+      className: "col-span-4 text-left",
     },
     {
       key: "quantity",
       label: "QTY",
       align: "right" as const,
-      className: "hidden md:block md:col-span-1 text-right",
+      className: "col-span-1 text-right",
     },
     {
       key: "currentPrice",
       label: "PRICE",
       align: "right" as const,
-      className: "hidden md:block md:col-span-2 text-right",
+      className: "col-span-2 text-right",
     },
     {
       key: "evaluationAmount",
       label: "VALUE",
       align: "right" as const,
-      className: "col-span-4 md:col-span-2 text-right",
+      className: "col-span-2 text-right",
     },
     {
       key: "weight",
       label: "WGHT",
       align: "right" as const,
-      className: "hidden md:block md:col-span-1 text-right",
+      className: "col-span-1 text-right",
     },
     {
       key: "profitLossRate",
       label: "ROI",
       align: "right" as const,
-      className: "col-span-3 md:col-span-2 text-right",
+      className: "col-span-2 text-right",
     },
   ];
 
@@ -237,7 +237,10 @@ export function HoldingsTable({
   };
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full w-full">
+    <div
+      ref={containerRef}
+      className="flex flex-col h-full w-full min-w-[700px]"
+    >
       {/* 테이블 헤더 (고정) */}
       <div
         className="grid grid-cols-12 items-center text-terminal-muted border-b border-terminal-border bg-terminal-bg z-10 text-sm px-1 shrink-0"
