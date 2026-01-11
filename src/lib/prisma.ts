@@ -9,6 +9,9 @@ const connectionString = process.env.POSTGRES_PRISMA_URL;
 
 const pool = new Pool({
   connectionString,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 const adapter = new PrismaPg(pool);
 
