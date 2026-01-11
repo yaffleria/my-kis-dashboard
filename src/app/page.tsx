@@ -105,15 +105,15 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="h-auto md:h-full bg-terminal-bg text-terminal-text font-mono flex flex-col items-center py-2 md:py-4 overflow-visible md:overflow-hidden">
-      <div className="w-full px-2 md:w-[95%] lg:w-[80%] max-w-400 flex flex-col gap-2 md:gap-4 h-auto md:h-full">
+    <div className="min-h-screen md:h-screen bg-terminal-bg text-terminal-text font-mono flex flex-col items-center py-2 md:py-4 overflow-y-auto md:overflow-hidden">
+      <div className="w-full px-2 md:w-[95%] lg:w-[80%] max-w-400 flex flex-col gap-2 md:gap-4 min-h-0 md:h-full">
         <TerminalHeader
           title="Blanc"
           ip="127.0.0.1"
           status={isFetching ? "SYNCING..." : "ONLINE"}
         />
 
-        <div className="flex flex-col gap-4 md:gap-6 flex-1 md:min-h-0">
+        <div className="flex flex-col gap-4 md:gap-6 min-h-0 md:flex-1">
           <SystemStatusPanel
             formatCurrency={formatCurrency}
             formatPercent={formatPercent}
@@ -121,9 +121,9 @@ export default function DashboardPage() {
             isLoading={isLoading || isFetching}
           />
 
-          <div className="flex flex-col md:flex-row flex-1 gap-4 md:min-h-0">
-            {/* Active Accounts Column (Width reduced) */}
-            <div className="flex flex-col gap-4 w-full md:w-80 lg:w-96 shrink-0 h-auto md:h-full">
+          <div className="flex flex-col md:flex-row gap-4 min-h-0 md:flex-1">
+            {/* Active Accounts Column */}
+            <div className="flex flex-col gap-4 w-full md:w-80 lg:w-96 shrink-0 min-h-0 md:h-full">
               <TerminalPanel
                 title="Active Accounts"
                 className="flex-1 min-h-0"
@@ -142,7 +142,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Holdings Matrix Column */}
-            <div className="flex flex-col gap-4 flex-1 min-w-0 h-150 md:h-full">
+            <div className="flex flex-col gap-4 w-full md:flex-1 min-h-[400px] md:min-h-0 md:h-full">
               <TerminalPanel
                 title={
                   selectedAccountKey

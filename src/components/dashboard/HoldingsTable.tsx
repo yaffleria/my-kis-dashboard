@@ -183,20 +183,30 @@ export function HoldingsTable({
     return containerHeight - HEADER_HEIGHT;
   }, [containerHeight]);
 
+  // 모바일 여부 판단 (가상화 제어용)
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   // 가상화 행 렌더러
   const RowRenderer = ({
     index,
     style,
   }: {
     index: number;
-    style: React.CSSProperties;
+    style?: React.CSSProperties;
   }) => {
     const row = sortedRows[index];
+    if (!row) return null;
     const isPos = row.profitLossRate >= 0;
     return (
       <div
         style={style}
-        className="grid grid-cols-12 items-center border-b border-terminal-border/30 hover:bg-brew-green/10 transition-colors font-mono text-sm px-1"
+        className="grid grid-cols-12 items-center border-b border-terminal-border/30 hover:bg-brew-green/10 transition-colors font-mono text-sm px-1 min-h-[32px]"
       >
         <div
           className={`font-bold truncate px-1 text-brew-green ${columns[0].className}`}
@@ -230,7 +240,7 @@ export function HoldingsTable({
     <div ref={containerRef} className="flex flex-col h-full w-full">
       {/* 테이블 헤더 (고정) */}
       <div
-        className="grid grid-cols-12 items-center text-terminal-muted border-b border-terminal-border bg-terminal-bg z-10 text-sm px-1"
+        className="grid grid-cols-12 items-center text-terminal-muted border-b border-terminal-border bg-terminal-bg z-10 text-sm px-1 shrink-0"
         style={{ height: HEADER_HEIGHT }}
       >
         {columns.map((col) => (
@@ -244,17 +254,25 @@ export function HoldingsTable({
         ))}
       </div>
 
-      {/* 가상화된 테이블 본문 */}
+      {/* 테이블 본문: 모바일은 일반 렌더링, 데스크탑은 가상화 */}
       <div className="flex-1 min-h-0">
-        <List
-          height={listHeight}
-          itemCount={sortedRows.length}
-          itemSize={ROW_HEIGHT}
-          width="100%"
-          className="scrollbar-thin scrollbar-thumb-terminal-border scrollbar-track-transparent"
-        >
-          {RowRenderer}
-        </List>
+        {isMobile ? (
+          <div className="flex flex-col">
+            {sortedRows.map((_, index) => (
+              <RowRenderer key={index} index={index} />
+            ))}
+          </div>
+        ) : (
+          <List
+            height={listHeight}
+            itemCount={sortedRows.length}
+            itemSize={ROW_HEIGHT}
+            width="100%"
+            className="scrollbar-thin scrollbar-thumb-terminal-border scrollbar-track-transparent"
+          >
+            {RowRenderer}
+          </List>
+        )}
       </div>
 
       {/* Stock Price Chart (하단 고정, 선택된 종목이 있을 때만 표시) */}
