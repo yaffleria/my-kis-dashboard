@@ -1,0 +1,18 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 우리가 사용할 토큰 저장소 모델
+model KisToken {
+  id        Int      @id @default(autoincrement())
+  type      String   @unique // 'access_token' 하나만 저장할 예정
+  token     String   @db.Text // 토큰 길이가 길어서 Text 타입 사용
+  expiresAt DateTime // 언제 만료되는지
+  updatedAt DateTime @updatedAt
+}

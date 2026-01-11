@@ -92,94 +92,53 @@ if (!globalWithKisCache._kisCache) {
   globalWithKisCache._kisCache = {};
 }
 
-import fs from "fs";
-import path from "path";
+import { prisma } from "./prisma";
 
 // ... existing imports ...
 
-const TOKEN_FILE_PATH = path.join(process.cwd(), ".kis_token.json");
+// [기존 파일 기반 로직 제거됨]
 
-/**
- * [로컬 전용] 파일에서 토큰 읽기
- */
-function readTokenFromFile(appKey: string): TokenData | null {
-  try {
-    if (fs.existsSync(TOKEN_FILE_PATH)) {
-      const fileContent = fs.readFileSync(TOKEN_FILE_PATH, "utf-8");
-      const tokens = JSON.parse(fileContent);
-      return tokens[appKey] || null;
-    }
-  } catch (e) {
-    console.warn("[KIS API] 토큰 파일 읽기 실패:", e);
-  }
-  return null;
+// 1회성 요청 관리용 (중복 API 호출 방지용 잠금 기구)
+// 토큰 정보를 저장하는 캐시가 아니라, '현재 진행 중인 Promise'만 관리합니다.
+const globalWithPending = global as unknown as {
+  _kisPendingRequests?: Map<string, Promise<string>>;
+};
+if (!globalWithPending._kisPendingRequests) {
+  globalWithPending._kisPendingRequests = new Map();
 }
+const pendingRequests = globalWithPending._kisPendingRequests;
 
 /**
- * [로컬 전용] 파일에 토큰 저장
- */
-function writeTokenToFile(appKey: string, tokenData: TokenData) {
-  try {
-    let tokens: Record<string, TokenData> = {};
-    if (fs.existsSync(TOKEN_FILE_PATH)) {
-      const fileContent = fs.readFileSync(TOKEN_FILE_PATH, "utf-8");
-      tokens = JSON.parse(fileContent);
-    }
-    tokens[appKey] = tokenData;
-    fs.writeFileSync(TOKEN_FILE_PATH, JSON.stringify(tokens, null, 2), "utf-8");
-  } catch (e) {
-    console.error("[KIS API] 토큰 파일 쓰기 실패:", e);
-  }
-}
-
-/**
- * 접근 토큰 발급 (Local File + Memory Cache + Promise Deduplication)
+ * 접근 토큰 발급 (DB-Only / Transient Promise Lock)
  *
- * 로컬 환경 최적화:
- * 1. 메모리 확인
- * 2. 파일 확인 (재시작 시 유지)
- * 3. 중복 요청 방지 (Promise Sharing)
+ * 로직 순서:
+ * 1. 현재 동일한 AppKey로 발급 중인 요청이 있는지 확인 (있으면 그 결과를 같이 기다림)
+ * 2. DB(Supabase) 확인
+ * 3. 만료되었거나 없으면 KIS API 호출
+ * 4. 새 토큰 DB 저장
+ * * 보안 정책: 모든 과정(DB조회, 발급, 저장) 중 하나라도 실패하면 에러를 던져 500 처리를 유도함.
  */
 async function getAccessToken(
   appKey: string,
   appSecret: string
 ): Promise<string> {
-  const cacheMap = globalWithKisCache._kisCache!;
-
-  // 캐시 엔트리 초기화
-  if (!cacheMap[appKey]) {
-    cacheMap[appKey] = { tokenData: null, promise: null };
+  // 1. 중복 요청 방지 (Lock)
+  if (pendingRequests.has(appKey)) {
+    return pendingRequests.get(appKey)!;
   }
 
-  const entry = cacheMap[appKey];
-
-  // 1. 메모리 캐시 확인
-  if (entry.tokenData && entry.tokenData.expiredAt > Date.now()) {
-    return entry.tokenData.access_token;
-  }
-
-  // 2. 파일 캐시 확인 (로컬 전용 - 서버 재시작 대응)
-  if (!entry.tokenData) {
-    const fileToken = readTokenFromFile(appKey);
-    if (fileToken && fileToken.expiredAt > Date.now()) {
-      // 파일에 유효한 토큰이 있으면 메모리에 로드하고 리턴
-      entry.tokenData = fileToken;
-      return fileToken.access_token;
-    }
-  }
-
-  // 3. 이미 발급 요청 중인 경우 (중복 호출 방지)
-  if (entry.promise) {
-    return entry.promise;
-  }
-
-  // 4. API 호출 (Promise 생성)
-  // console.log(
-  //   `[KIS API] 새로운 접근 토큰 요청 (Key: ${appKey.substring(0, 5)}...)`
-  // );
-
-  entry.promise = (async () => {
+  const fetchPromise = (async () => {
     try {
+      // 2. DB 캐시 확인
+      const dbToken = await prisma.kisToken.findUnique({
+        where: { type: `kis_${appKey}` },
+      });
+
+      if (dbToken && dbToken.expiresAt.getTime() > Date.now()) {
+        return dbToken.token;
+      }
+
+      // 3. 토큰이 없거나 만료된 경우: KIS API 호출
       const response = await axios.post(`${KIS_API_URL[ENV]}/oauth2/tokenP`, {
         grant_type: "client_credentials",
         appkey: appKey,
@@ -187,6 +146,10 @@ async function getAccessToken(
       });
 
       const data = response.data;
+
+      if (!data.access_token) {
+        throw new Error("KIS API로부터 토큰을 받지 못했습니다.");
+      }
 
       let expiredTime = Date.now() + 23 * 60 * 60 * 1000; // 기본 23시간
       try {
@@ -198,26 +161,29 @@ async function getAccessToken(
         console.warn("토큰 만료시간 파싱 실패, 기본값 사용", e);
       }
 
-      const newTokenData: TokenData = {
-        access_token: data.access_token,
-        access_token_token_expired: data.access_token_token_expired,
-        expiredAt: expiredTime,
-      };
-
-      // 메모리 및 파일 업데이트
-      entry.tokenData = newTokenData;
-      writeTokenToFile(appKey, newTokenData);
+      // 4. 새 토큰 DB 저장 (Upsert)
+      await prisma.kisToken.upsert({
+        where: { type: `kis_${appKey}` },
+        update: {
+          token: data.access_token,
+          expiresAt: new Date(expiredTime),
+        },
+        create: {
+          type: `kis_${appKey}`,
+          token: data.access_token,
+          expiresAt: new Date(expiredTime),
+        },
+      });
 
       return data.access_token;
-    } catch (error) {
-      console.error("접근 토큰 발급 실패:", error);
-      throw new Error("KIS API 접근 토큰 발급에 실패했습니다.");
     } finally {
-      entry.promise = null;
+      // 작업 완료 후 잠금 해제 (메모리에서 해당 요청 제거)
+      pendingRequests.delete(appKey);
     }
   })();
 
-  return entry.promise;
+  pendingRequests.set(appKey, fetchPromise);
+  return fetchPromise;
 }
 
 /**
