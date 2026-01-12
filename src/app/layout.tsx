@@ -1,48 +1,16 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Providers, EnvInitializer, CockpitModal } from "@/components";
+import { Providers, EnvInitializer } from "@/components";
+import { FloatingNav } from "@/components/layout/FloatingNav";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
   ),
-  title: "Blanc",
-  description: "한국투자증권 Open API를 활용한 실시간 계좌 모니터링 대시보드",
-  keywords: [
-    "한국투자증권",
-    "Open API",
-    "주식",
-    "투자",
-    "포트폴리오",
-    "대시보드",
-  ],
-  authors: [{ name: "yaffleria" }],
+  title: "Blanc Cosmos",
+  description: "Advanced Portfolio Visualization",
   icons: {
     icon: "/favicon.png",
-    shortcut: "/favicon.png",
-    apple: "/favicon.png",
-  },
-  openGraph: {
-    title: "Blanc - Portfolio Dashboard",
-    description: "한국투자증권 Open API를 활용한 실시간 계좌 모니터링 대시보드",
-    url: "./",
-    siteName: "Blanc Dashboard",
-    images: [
-      {
-        url: "/favicon.png",
-        width: 1024,
-        height: 1024,
-        alt: "Blanc Terminal Dashboard Icon",
-      },
-    ],
-    type: "website",
-    locale: "ko_KR",
-  },
-  twitter: {
-    card: "summary",
-    title: "Blanc - Portfolio Dashboard",
-    description: "한국투자증권 Open API를 활용한 실시간 계좌 모니터링 대시보드",
-    images: ["/favicon.png"],
   },
 };
 
@@ -54,25 +22,14 @@ export default function RootLayout({
   return (
     <html lang="ko" className="dark" suppressHydrationWarning>
       <head>
-        {/* D2Coding 폰트 */}
-        <link
-          href="https://cdn.jsdelivr.net/gh/joungkyun/font-d2coding@1.3.2/d2coding.css"
-          rel="stylesheet"
-          type="text/css"
-        />
-        {/* JetBrains Mono 폰트 (폴백) */}
-        <link
-          href="https://cdn.jsdelivr.net/npm/jetbrains-mono@1.0.6/css/jetbrains-mono.min.css"
-          rel="stylesheet"
-          type="text/css"
-        />
+        <link href="https://fonts.cdnfonts.com/css/inter" rel="stylesheet" />
       </head>
       <body
-        className="antialiased bg-terminal-bg text-terminal-text"
+        className="antialiased min-h-screen selection:bg-violet-500/30 bg-black text-foreground overflow-hidden"
         suppressHydrationWarning
       >
         <Providers>
-          {/* 민감정보(appKey, appSecret) 제거 후 전달 */}
+          {/* Environment safe-guarding */}
           <EnvInitializer
             envAccountsJson={(() => {
               try {
@@ -80,28 +37,35 @@ export default function RootLayout({
                 if (!raw) return undefined;
                 const parsed = JSON.parse(raw);
                 if (!Array.isArray(parsed)) return undefined;
-                // appKey, appSecret 제거 (보안)
-                const sanitized = parsed.map((acc: Record<string, unknown>) => {
-                  // 허용된 필드만 명시적으로 추출 (Allow-list 방식)
-                  return {
-                    accountNo: acc.accountNo,
-                    productCode: acc.productCode,
-                    accountName: acc.accountName || acc.name,
-                    isPension:
-                      acc.isPension ??
-                      ["22", "29"].includes(String(acc.productCode || "")),
-                  };
-                });
-                return JSON.stringify(sanitized);
+                return JSON.stringify(
+                  parsed.map(
+                    (acc: {
+                      accountNo: string;
+                      productCode: string;
+                      accountName?: string;
+                      name?: string;
+                      isPension?: boolean;
+                    }) => ({
+                      accountNo: acc.accountNo,
+                      productCode: acc.productCode,
+                      accountName: acc.accountName || acc.name,
+                      isPension:
+                        acc.isPension ??
+                        ["22", "29"].includes(String(acc.productCode || "")),
+                    })
+                  )
+                );
               } catch {
                 return undefined;
               }
             })()}
           />
-          <main className="w-full min-h-screen md:h-screen p-2 md:p-6 lg:p-12 flex flex-col overflow-y-auto md:overflow-hidden">
+
+          <main className="relative w-full h-screen overflow-hidden">
             {children}
           </main>
-          <CockpitModal />
+
+          <FloatingNav />
         </Providers>
       </body>
     </html>

@@ -5,457 +5,142 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Terminal Theme Source */
-  --terminal-bg: #000000;
-  --terminal-card: #0d1117;
-  --terminal-border: #30363d;
-  --terminal-text: #c9d1d9;
-  --terminal-muted: #484f58;
+  /* Cosmic Theme - Light (Not primary focus but fallback) */
+  --background: #ffffff;
+  --foreground: #030712;
 
-  /* Brew Colors */
-  --brew-green: #2ea44f;
-  --brew-neon-green: #3fb950;
-  --brew-yellow: #d29922;
-  --brew-red: #f85149;
-  --brew-blue: #58a6ff;
+  --card: #f8fafc;
+  --card-foreground: #030712;
 
-  /* Shadcn Base Variables (Mapped to Terminal Theme) */
-  --background: var(--terminal-bg); /* #000000 */
-  --foreground: var(--terminal-text); /* #c9d1d9 */
+  --popover: #ffffff;
+  --popover-foreground: #030712;
 
-  --card: var(--terminal-card); /* #0d1117 */
-  --card-foreground: var(--terminal-text);
-
-  --popover: var(--terminal-card);
-  --popover-foreground: var(--terminal-text);
-
-  --primary: var(--brew-green); /* #2ea44f */
+  --primary: #7c3aed; /* Violet */
   --primary-foreground: #ffffff;
 
-  --secondary: var(--terminal-border); /* #30363d */
-  --secondary-foreground: var(--terminal-text);
+  --secondary: #06b6d4; /* Cyan */
+  --secondary-foreground: #ffffff;
 
-  --muted: #161b22;
-  --muted-foreground: var(--terminal-muted); /* #484f58 */
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
 
-  --accent: rgba(255, 255, 255, 0.05); /* sidebar hover style */
-  --accent-foreground: var(--brew-green);
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
 
-  --destructive: var(--brew-red); /* #f85149 */
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  --border: var(--terminal-border); /* #30363d */
-  --input: var(--terminal-border);
-  --ring: var(--brew-green);
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #7c3aed;
 
-  --radius: 0rem; /* Straight edges for terminal feel */
+  --radius: 0.75rem;
+}
 
-  /* Legacy & Extra Variables */
-  --background-secondary: var(--terminal-card);
-  --background-tertiary: #161b22;
-  --foreground-secondary: var(--terminal-muted);
+.dark {
+  /* Cosmic Theme - Dark (Deep Space) */
+  --background: #030712; /* Deep Space Black */
+  --foreground: #f8fafc; /* Starlight */
 
-  --success: var(--brew-green);
-  --warning: var(--brew-yellow);
-  --error: var(--brew-red);
-  --info: var(--brew-blue);
+  --card: rgba(17, 24, 39, 0.4); /* Glass Dark */
+  --card-foreground: #f8fafc;
 
-  /* Chart Colors */
-  --chart-1: var(--brew-green);
-  --chart-2: var(--brew-neon-green);
-  --chart-3: var(--brew-blue);
-  --chart-4: var(--brew-yellow);
-  --chart-5: var(--brew-red);
-  --chart-6: #a371f7;
+  --popover: #030712;
+  --popover-foreground: #f8fafc;
 
-  /* Sidebar */
-  --sidebar-bg: var(--terminal-bg);
-  --sidebar-active: rgba(46, 164, 79, 0.15);
-  --sidebar-hover: rgba(255, 255, 255, 0.05);
-  --sidebar-foreground: var(--terminal-text);
-  --sidebar-primary: var(--brew-green);
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--terminal-border);
-  --sidebar-accent-foreground: var(--terminal-text);
-  --sidebar-border: var(--terminal-border);
-  --sidebar-ring: var(--brew-green);
+  --primary: #8b5cf6; /* Nebula Violet */
+  --primary-foreground: #ffffff;
+
+  --secondary: #0891b2; /* Nebula Cyan */
+  --secondary-foreground: #ffffff;
+
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+
+  --accent: rgba(139, 92, 246, 0.15); /* Faint Violet */
+  --accent-foreground: #f8fafc;
+
+  --destructive: #991b1b;
+  --destructive-foreground: #ffffff;
+
+  --border: rgba(148, 163, 184, 0.1);
+  --input: rgba(148, 163, 184, 0.1);
+  --ring: #8b5cf6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
-
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --radius-sm: calc(var(--radius) - 2px);
-  --radius-md: calc(var(--radius) - 1px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 2px);
-
-  /* Terminal Specifics */
-  --color-terminal-bg: var(--terminal-bg);
-  --color-terminal-card: var(--terminal-card);
-  --color-terminal-border: var(--terminal-border);
-  --color-terminal-text: var(--terminal-text);
-  --color-terminal-muted: var(--terminal-muted);
-
-  --color-brew-green: var(--brew-green);
-  --color-brew-neon-green: var(--brew-neon-green);
-  --color-brew-yellow: var(--brew-yellow);
-  --color-brew-red: var(--brew-red);
-  --color-brew-blue: var(--brew-blue);
-
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-chart-6: var(--chart-6);
-
-  --color-sidebar-bg: var(--sidebar-bg);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-
-  /* Fonts */
-  --font-sans: "D2Coding", "JetBrains Mono", ui-monospace, monospace;
-  --font-mono: "D2Coding", "JetBrains Mono", ui-monospace, monospace;
-
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
-
-  @keyframes accordion-down {
-    from {
-      height: 0;
-    }
-    to {
-      height: var(--radix-accordion-content-height);
-    }
-  }
-  @keyframes accordion-up {
-    from {
-      height: var(--radix-accordion-content-height);
-    }
-    to {
-      height: 0;
-    }
-  }
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
 /* Base Styles */
 * {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
   border-color: var(--border);
-  outline-color: var(--ring);
-}
-
-html,
-body {
-  height: 100%;
-  overflow-x: hidden;
 }
 
 body {
-  background: var(--terminal-bg);
-  color: var(--terminal-text);
-  font-family: "D2Coding", "JetBrains Mono", ui-monospace, monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  position: relative;
+  background: var(--background);
+  color: var(--foreground);
+  font-feature-settings: "rlig" 1, "calt" 1;
 }
 
-/* CRT Scanline Effect - Disabled */
-body::before {
-  display: none;
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: rgba(3, 7, 18, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
-/* Scrollbar - Terminal Style */
+.glass-panel-hover:hover {
+  background: rgba(3, 7, 18, 0.6);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+/* Cosmic Gradient Text */
+.text-cosmic {
+  @apply bg-clip-text text-transparent bg-linear-to-r from-violet-400 to-cyan-400;
+}
+
+/* Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
-
 ::-webkit-scrollbar-track {
-  background: var(--terminal-bg);
+  background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: var(--terminal-border);
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 99px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--brew-green);
+  background: rgba(148, 163, 184, 0.4);
 }
 
-/* Terminal Card Style (직각, 테두리만) */
-.glass-card {
-  background: var(--terminal-card);
-  border: 1px solid var(--terminal-border);
-  box-shadow: none;
-}
-
-.glass-card-hover {
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.glass-card-hover:hover {
-  border-color: var(--brew-green);
-  /* box-shadow: 0 0 8px rgba(46, 164, 79, 0.3); */
-  box-shadow: none;
-}
-
-/* Terminal Prompt Style */
-.terminal-prompt::before {
-  content: "$ ";
-  color: var(--brew-green);
-  font-weight: bold;
-}
-
-/* Glow Effects - Disabled */
-.glow-text {
-  /* text-shadow: 0 0 8px rgba(46, 164, 79, 0.6); */
-  text-shadow: none;
-}
-
-.glow-accent {
-  /* box-shadow: 0 0 8px rgba(46, 164, 79, 0.4); */
-  box-shadow: none;
-}
-
-/* Gradient Text - Brew Green */
-/* Gradient Text - Brew Green (Renamed/Simplified) */
-.gradient-text {
-  color: var(--brew-green);
-}
-
-/* Blinking Cursor */
-.cursor-blink::after {
-  content: "█";
-  animation: blink 1s step-end infinite;
-  color: var(--brew-green);
-}
-
-/* Animation Keyframes */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes pulseGlow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 1px var(--brew-green);
-  }
-  50% {
-    box-shadow: 0 0 0 1px var(--brew-green), 0 0 12px rgba(46, 164, 79, 0.4);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-@keyframes blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.2s ease-out forwards;
-}
-
-.animate-pulse-glow {
-  animation: pulseGlow 2s ease-in-out infinite;
-}
-
-/* Loading Skeleton - Terminal Style */
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--terminal-card) 25%,
-    var(--terminal-border) 50%,
-    var(--terminal-card) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-/* Table Styles - Terminal Grid */
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: "D2Coding", monospace;
-  font-size: 13px;
-}
-
-.data-table th,
-.data-table td {
-  padding: 8px 12px;
-  text-align: left;
-  border-bottom: 1px solid var(--terminal-border);
-}
-
-.data-table th {
-  font-weight: 600;
-  color: var(--brew-green);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  background: var(--terminal-bg);
-  border-bottom: 1px solid var(--brew-green);
-}
-
-.data-table tbody tr {
-  transition: background-color 0.1s ease;
-}
-
-.data-table tbody tr:hover {
-  background-color: rgba(46, 164, 79, 0.1);
-}
-
-/* Badge Styles - Terminal Tags */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 6px;
-  font-size: 10px;
-  font-weight: 600;
-  font-family: "D2Coding", monospace;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border: 1px solid;
-}
-
-.badge-success {
-  background-color: transparent;
-  color: var(--brew-green);
-  border-color: var(--brew-green);
-}
-
-.badge-warning {
-  background-color: transparent;
-  color: var(--brew-yellow);
-  border-color: var(--brew-yellow);
-}
-
-.badge-error {
-  background-color: transparent;
-  color: var(--brew-red);
-  border-color: var(--brew-red);
-}
-
-.badge-info {
-  background-color: transparent;
-  color: var(--brew-blue);
-  border-color: var(--brew-blue);
-}
-
-/* Progress Bar - Terminal Style (직각) */
-.progress-bar {
-  width: 100%;
-  height: 4px;
-  background-color: var(--terminal-border);
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--brew-green);
-  transition: width 0.2s ease;
-}
-
-/* Responsive Container */
-.container-responsive {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0 16px;
-}
-
-@media (min-width: 640px) {
-  .container-responsive {
-    padding: 0 24px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .container-responsive {
-    padding: 0 32px;
-  }
-}
-
-/* QHD (2560px) 이상에서 70% 너비로 제한 */
-@media (min-width: 1440px) {
-  .container-responsive {
-    max-width: 70%;
-  }
-}
-
-/* 차트 컨테이너 스타일 (직각) */
-.chart-container {
-  background: var(--terminal-card);
-  border: 1px solid var(--terminal-border);
-  padding: 16px;
-}
-
-/* 터미널 박스 스타일 */
-.terminal-box {
-  background: var(--terminal-bg);
-  border: 1px solid var(--terminal-border);
-  padding: 12px 16px;
-  font-family: "D2Coding", monospace;
-  font-size: 13px;
-}
-
-.terminal-box-header {
-  color: var(--brew-green);
-  font-weight: bold;
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--terminal-border);
+.safe-area-bottom {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
 }

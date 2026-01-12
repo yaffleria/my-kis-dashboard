@@ -1,19 +1,13 @@
-// 기존 컴포넌트
+// Core Components
 export { Providers } from "./Providers";
-export {
-  StatCard,
-  AccountCard,
-  HoldingRow,
-  EmptyState,
-  LoadingSpinner,
-} from "./Cards";
 export * from "./EnvInitializer";
+export { VoronoiPortfolio } from "./VoronoiPortfolio";
 
-// 터미널 UI 컴포넌트
+// Terminal UI Components (Legacy/Utility)
 export * from "./terminal";
 
-// 범용 UI 컴포넌트
+// Generic UI Components
 export * from "./ui";
 
-// 대시보드 전용 컴포넌트
+// Dashboard Components
 export * from "./dashboard";

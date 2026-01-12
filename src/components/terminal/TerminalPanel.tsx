@@ -1,22 +1,19 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 export interface TerminalPanelProps {
-  /** 패널 타이틀 */
+  /** Title of the panel */
   title: string;
-  /** 패널 콘텐츠 */
+  /** Panel content */
   children: React.ReactNode;
-  /** 추가 CSS 클래스 */
+  /** Additional CSS classes */
   className?: string;
-  /** 헤더 우측에 표시할 액션 컴포넌트 */
+  /** Action component to display on the right side of the header */
   headerAction?: React.ReactNode;
-  /** 스크롤 가능 여부 */
+  /** Whether the content is scrollable */
   scrollable?: boolean;
-  /** 로딩 상태 여부 */
-  isLoading?: boolean;
 }
 
 export function TerminalPanel({
@@ -25,40 +22,33 @@ export function TerminalPanel({
   className = "",
   scrollable = false,
   headerAction,
-  isLoading = false,
 }: TerminalPanelProps) {
   return (
-    <Card
+    <div
       className={cn(
-        "border border-brew-green bg-terminal-bg flex flex-col rounded-none shadow-none relative",
+        "flex flex-col glass-panel rounded-2xl overflow-hidden h-full w-full",
         className
       )}
     >
-      <CardHeader className="border-b border-brew-green bg-brew-green/10 p-1 px-3 shrink-0 flex flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-brew-green font-bold text-sm tracking-wide uppercase">
+      <div className="flex items-center justify-between p-4 border-b border-white/5 bg-white/5 backdrop-blur-md">
+        <h4 className="text-sm font-semibold text-white tracking-wide uppercase">
           {title}
-        </CardTitle>
+        </h4>
         {headerAction && <div>{headerAction}</div>}
-      </CardHeader>
-      <CardContent
-        className={cn(
-          "p-3 flex-1 relative",
-          scrollable ? "overflow-y-auto custom-scrollbar" : "overflow-hidden"
-        )}
+      </div>
+
+      <div
+        className={cn("flex-1 relative", scrollable ? "overflow-hidden" : "")}
       >
-        {/* Loading Overlay */}
-        {isLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-terminal-bg/80 backdrop-blur-[1px]">
-            <div className="flex flex-col items-center gap-2">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-brew-green border-t-transparent" />
-              <span className="text-xs text-brew-green animate-pulse">
-                LOADING...
-              </span>
-            </div>
-          </div>
-        )}
-        {children}
-      </CardContent>
-    </Card>
+        <div
+          className={cn(
+            "h-full w-full",
+            scrollable ? "overflow-y-auto custom-scrollbar" : "overflow-hidden"
+          )}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
   );
 }

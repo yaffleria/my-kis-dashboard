@@ -1,60 +1,47 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
-import { FixedSizeList as List } from "react-window";
+import { useState, useMemo } from "react";
 import type { DashboardBalance, HoldingsRow } from "@/types";
-import { SortIcon, type SortConfig } from "@/components/ui";
-
-/**
- * 보유 종목 테이블 컴포넌트
- * - 가상화 스크롤 적용 (react-window)
- * - 종목 클릭 시 하단에 90일 차트 표시 (고정 위치)
- */
-
-const ROW_HEIGHT = 32; // 각 행의 높이 (px)
-const HEADER_HEIGHT = 36; // 헤더 높이 (px)
+import { ArrowUp, ArrowDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface HoldingsTableProps {
   balances: DashboardBalance[];
-  formatCurrency: (val: number) => string;
-  formatPercent: (val: number) => string;
-  /** 전체 자산 (비중 계산용) */
   portfolioTotalAsset?: number;
+  isLoading?: boolean;
 }
+
+type SortDirection = "asc" | "desc";
+interface SortConfig {
+  key: keyof HoldingsRow;
+  direction: SortDirection;
+}
+
+const SortIcon = ({
+  active,
+  direction,
+}: {
+  active: boolean;
+  direction: SortDirection;
+}) => {
+  if (!active) return null;
+  return direction === "asc" ? (
+    <ArrowUp className="w-3 h-3 ml-1" />
+  ) : (
+    <ArrowDown className="w-3 h-3 ml-1" />
+  );
+};
 
 export function HoldingsTable({
   balances,
-  formatCurrency,
-  formatPercent,
   portfolioTotalAsset = 0,
+  isLoading = false,
 }: HoldingsTableProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig | null>({
-    key: "evaluationAmount",
+    key: "weight",
     direction: "desc",
   });
 
-  // 컨테이너 높이 측정
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerHeight, setContainerHeight] = useState(400);
-
-  useEffect(() => {
-    const updateHeight = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setContainerHeight(rect.height);
-      }
-    };
-
-    updateHeight();
-    const resizeObserver = new ResizeObserver(updateHeight);
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-
-    return () => resizeObserver.disconnect();
-  }, []);
-
-  // 데이터 통합 및 매핑 (모든 계좌의 잔고 합산)
   const rows = useMemo(() => {
     const aggregatedInfo: Record<
       string,
@@ -64,6 +51,7 @@ export function HoldingsTable({
         currentPrice: number;
         evaluationAmount: number;
         totalBuyAmount: number;
+        profitLossRate: number;
       }
     > = {};
 
@@ -79,6 +67,7 @@ export function HoldingsTable({
             currentPrice: holding.currentPrice,
             evaluationAmount: 0,
             totalBuyAmount: 0,
+            profitLossRate: 0,
           };
         }
 
@@ -86,6 +75,7 @@ export function HoldingsTable({
         info.quantity += Number(holding.quantity);
         info.evaluationAmount += Number(holding.evaluationAmount);
         info.totalBuyAmount += Number(holding.buyAmount);
+        info.profitLossRate = holding.profitLossRate;
       });
     });
 
@@ -96,7 +86,7 @@ export function HoldingsTable({
           ? ((info.evaluationAmount - info.totalBuyAmount) /
               info.totalBuyAmount) *
             100
-          : 0;
+          : info.profitLossRate;
 
       const totalAssetNum = portfolioTotalAsset;
       const weight =
@@ -114,168 +104,149 @@ export function HoldingsTable({
     });
   }, [balances, portfolioTotalAsset]);
 
-  // 정렬된 행 데이터
   const sortedRows = useMemo(() => {
     if (!sortConfig) return rows;
 
     return [...rows].sort((a, b) => {
-      const fieldA = a[sortConfig.key as keyof HoldingsRow];
-      const fieldB = b[sortConfig.key as keyof HoldingsRow];
+      const fieldA = a[sortConfig.key];
+      const fieldB = b[sortConfig.key];
       if (fieldA < fieldB) return sortConfig.direction === "asc" ? -1 : 1;
       if (fieldA > fieldB) return sortConfig.direction === "asc" ? 1 : -1;
       return 0;
     });
   }, [rows, sortConfig]);
 
-  const handleSort = (key: string) => {
-    let direction: "asc" | "desc" = "desc";
-    if (
-      sortConfig &&
-      sortConfig.key === key &&
-      sortConfig.direction === "desc"
-    ) {
-      direction = "asc";
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const columns = [
-    {
-      key: "stockName",
-      label: "SYMBOL",
-      align: "left" as const,
-      className: "col-span-4 text-left",
-    },
-    {
-      key: "quantity",
-      label: "QTY",
-      align: "right" as const,
-      className: "col-span-1 text-right",
-    },
-    {
-      key: "currentPrice",
-      label: "PRICE",
-      align: "right" as const,
-      className: "col-span-2 text-right",
-    },
-    {
-      key: "evaluationAmount",
-      label: "VALUE",
-      align: "right" as const,
-      className: "col-span-2 text-right",
-    },
-    {
-      key: "weight",
-      label: "WGHT",
-      align: "right" as const,
-      className: "col-span-1 text-right",
-    },
-    {
-      key: "profitLossRate",
-      label: "ROI",
-      align: "right" as const,
-      className: "col-span-2 text-right",
-    },
-  ];
-
-  // 리스트 영역 높이 계산
-  const listHeight = useMemo(() => {
-    return containerHeight - HEADER_HEIGHT;
-  }, [containerHeight]);
-
-  // 모바일 여부 판단 (가상화 제어용)
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
-  // 가상화 행 렌더러
-  const RowRenderer = ({
-    index,
-    style,
-  }: {
-    index: number;
-    style?: React.CSSProperties;
-  }) => {
-    const row = sortedRows[index];
-    if (!row) return null;
-    const isPos = row.profitLossRate >= 0;
-    return (
-      <div
-        style={style}
-        className="grid grid-cols-12 items-center border-b border-terminal-border/30 hover:bg-brew-green/10 transition-colors font-mono text-sm px-1 min-h-8"
-      >
-        <div
-          className={`font-bold truncate px-1 text-brew-green ${columns[0].className}`}
-        >
-          {row.stockName}
-        </div>
-        <div className={`text-terminal-text px-1 ${columns[1].className}`}>
-          {row.quantity}
-        </div>
-        <div className={`text-terminal-text px-1 ${columns[2].className}`}>
-          {formatCurrency(row.currentPrice)}
-        </div>
-        <div className={`text-terminal-text px-1 ${columns[3].className}`}>
-          {formatCurrency(row.evaluationAmount)}
-        </div>
-        <div className={`text-terminal-text px-1 ${columns[4].className}`}>
-          {(row.weight || 0).toFixed(2)}%
-        </div>
-        <div
-          className={`px-1 ${isPos ? "text-brew-green" : "text-brew-red"} ${
-            columns[5].className
-          }`}
-        >
-          {formatPercent(row.profitLossRate)}
-        </div>
-      </div>
-    );
+  const handleSort = (key: keyof HoldingsRow) => {
+    setSortConfig((current) => {
+      if (current?.key === key) {
+        return {
+          key,
+          direction: current.direction === "asc" ? "desc" : "asc",
+        };
+      }
+      return { key, direction: "desc" };
+    });
   };
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full w-full min-w-175">
-      {/* 테이블 헤더 (고정) */}
-      <div
-        className="grid grid-cols-12 items-center text-terminal-muted border-b border-terminal-border bg-terminal-bg z-10 text-sm px-1 shrink-0"
-        style={{ height: HEADER_HEIGHT }}
-      >
-        {columns.map((col) => (
-          <div
-            key={col.key}
-            className={`py-2 px-1 cursor-pointer hover:text-brew-green transition-colors select-none ${col.className}`}
-            onClick={() => handleSort(col.key)}
-          >
-            {col.label} <SortIcon colKey={col.key} sortConfig={sortConfig} />
-          </div>
-        ))}
-      </div>
+    <div className="w-full h-full flex flex-col">
+      <div className="flex-1 overflow-auto">
+        <table className="w-full text-left text-sm whitespace-nowrap">
+          <thead className="text-xs uppercase bg-white/5 text-muted-foreground sticky top-0 backdrop-blur-md z-10">
+            <tr>
+              <th
+                className="px-2 py-3 cursor-pointer hover:text-white transition-colors"
+                onClick={() => handleSort("stockName")}
+              >
+                <div className="flex items-center">
+                  <span className="truncate">Name</span>
+                  <SortIcon
+                    active={sortConfig?.key === "stockName"}
+                    direction={sortConfig?.direction || "desc"}
+                  />
+                </div>
+              </th>
+              <th
+                className="px-2 py-3 text-right cursor-pointer hover:text-white transition-colors"
+                onClick={() => handleSort("profitLossRate")}
+              >
+                <div className="flex items-center justify-end">
+                  ROI
+                  <SortIcon
+                    active={sortConfig?.key === "profitLossRate"}
+                    direction={sortConfig?.direction || "desc"}
+                  />
+                </div>
+              </th>
+              <th
+                className="px-2 py-3 text-right cursor-pointer hover:text-white transition-colors"
+                onClick={() => handleSort("weight")}
+              >
+                <div className="flex items-center justify-end">
+                  Wgt
+                  <SortIcon
+                    active={sortConfig?.key === "weight"}
+                    direction={sortConfig?.direction || "desc"}
+                  />
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {isLoading
+              ? Array.from({ length: 5 }).map((_, idx) => (
+                  <tr key={`skeleton-${idx}`} className="animate-pulse">
+                    <td className="px-4 py-3">
+                      <div className="h-4 bg-white/10 rounded w-24 mb-1" />
+                      <div className="h-3 bg-white/5 rounded w-16" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 bg-white/10 rounded w-16 ml-auto" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 bg-white/10 rounded w-12 ml-auto" />
+                    </td>
+                  </tr>
+                ))
+              : sortedRows.map((row) => {
+                  const isPos = row.profitLossRate >= 0;
+                  const profitColor = isPos ? "text-green-400" : "text-red-500";
+                  const profitIcon = isPos ? (
+                    <ArrowUp className="w-3 h-3" />
+                  ) : (
+                    <ArrowDown className="w-3 h-3" />
+                  );
 
-      {/* 테이블 본문: 모바일은 일반 렌더링, 데스크탑은 가상화 */}
-      <div className="flex-1 min-h-0">
-        {isMobile ? (
-          <div className="flex flex-col">
-            {sortedRows.map((_, index) => (
-              <RowRenderer key={index} index={index} />
-            ))}
+                  return (
+                    <tr
+                      key={row.stockCode}
+                      className="hover:bg-white/5 transition-colors group"
+                    >
+                      <td className="px-1.5 py-3">
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-semibold text-white group-hover:text-primary transition-colors text-[11px] leading-tight whitespace-normal break-keep">
+                            {row.stockName}
+                          </span>
+                          <span className="text-[9px] text-muted-foreground font-mono opacity-60">
+                            {row.stockCode}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-1.5 py-3 text-right">
+                        <div
+                          className={cn(
+                            "flex items-center justify-end gap-0.5 font-medium text-[11px]",
+                            profitColor
+                          )}
+                        >
+                          {profitIcon}
+                          {Math.abs(row.profitLossRate).toFixed(1)}%
+                        </div>
+                      </td>
+                      <td className="px-1.5 py-3 text-right">
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-white font-medium text-[11px]">
+                            {row.weight.toFixed(1)}%
+                          </span>
+                          <div className="w-8 h-0.5 bg-white/10 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary"
+                              style={{ width: `${Math.min(row.weight, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+          </tbody>
+        </table>
+        {!isLoading && sortedRows.length === 0 && (
+          <div className="p-12 text-center text-muted-foreground">
+            No positions found.
           </div>
-        ) : (
-          <List
-            height={listHeight}
-            itemCount={sortedRows.length}
-            itemSize={ROW_HEIGHT}
-            width="100%"
-            className="scrollbar-thin scrollbar-thumb-terminal-border scrollbar-track-transparent"
-          >
-            {RowRenderer}
-          </List>
         )}
       </div>
-
-      {/* Stock Price Chart (하단 고정, 선택된 종목이 있을 때만 표시) */}
     </div>
   );
 }

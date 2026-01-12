@@ -42,30 +42,11 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 2. 로그인했지만 허용된 이메일이 아닌 경우 로그아웃 처리
-  if (user) {
-    const allowedEmails = (process.env.AUTH_ALLOWED_EMAILS || "")
-      .split(",")
-      .map((e) => e.trim());
-
-    if (
-      allowedEmails.length > 0 &&
-      user.email &&
-      !allowedEmails.includes(user.email)
-    ) {
-      await supabase.auth.signOut();
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      url.searchParams.set("error", "unauthorized_email");
-      return NextResponse.redirect(url);
-    }
-
-    // 이미 로그인되어 있는데 로그인 페이지에 접근하면 메인으로 이동
-    if (request.nextUrl.pathname.startsWith("/login")) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/";
-      return NextResponse.redirect(url);
-    }
+  // 2. 이미 로그인되어 있는데 로그인 페이지에 접근하면 메인으로 이동
+  if (user && request.nextUrl.pathname.startsWith("/login")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
   }
 
   return response;

@@ -1,31 +1,18 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
 import { useDashboardStore, useAccountStore } from "@/store";
-import type { AccountBalance, ApiResponse, PortfolioSummary } from "@/types";
+import type { AccountBalance, PortfolioSummary } from "@/types";
 
 /**
  * 계좌 잔고 조회 API 호출
  */
-async function fetchBalances(): Promise<AccountBalance[]> {
-  // 최적화: POST 중복 호출 제거. GET 요청만으로 서버 설정(Env + Manual) 및 시세 조회를 모두 수행.
-  // 이로써 초기 진입 시 깜빡임 현상(Double Fetch)을 방지하고 요청 수를 절반으로 줄임.
-  const response = await axios.get<
-    ApiResponse<AccountBalance[]> & { source?: string }
-  >("/api/balance");
-
-  if (!response.data.success) {
-    throw new Error(response.data.error || "잔고 조회 실패");
-  }
-
-  return response.data.data || [];
-}
+import { getBalanceAction } from "@/app/actions/balance";
 
 /**
  * 잔고 데이터로부터 포트폴리오 요약 계산
  */
-function calculatePortfolioSummary(
+export function calculatePortfolioSummary(
   balances: AccountBalance[]
 ): PortfolioSummary {
   let totalAsset = 0;
@@ -65,6 +52,7 @@ function calculatePortfolioSummary(
 // 옵션 타입 정의
 interface UseBalanceOptions {
   pollingInterval?: number; // ms 단위, 0이면 비활성화
+  initialData?: AccountBalance[];
 }
 
 /**
@@ -81,22 +69,23 @@ export function useBalanceQuery(options?: UseBalanceOptions) {
     balances,
   } = useDashboardStore();
 
-  // 기본값 15분 (900,000ms) - API 호출 제한 고려
-  const refetchInterval =
-    options?.pollingInterval !== undefined
-      ? options.pollingInterval
-      : 1000 * 60 * 15;
+  // 기본적으로 폴링은 비활성화 (0 또는 undefined일 경우 비활성)
+  const refetchInterval = options?.pollingInterval || 0;
 
   return useQuery({
     queryKey: ["balances", accounts.map((a) => a.accountNo).join(",")],
     queryFn: async () => {
-      // isFetching 상태는 useQuery가 관리하므로 setLoading을 여기서 호출하지 않아도 됨
-      // 하지만 전역 스토어 동기화를 위해 유지
-      if (balances.length === 0) setLoading(true);
+      if (balances.length === 0 && !options?.initialData) setLoading(true);
       setError(null);
 
       try {
-        const data = await fetchBalances();
+        const result = await getBalanceAction();
+
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+
+        const data = result.data || [];
 
         // 스토어 업데이트
         setBalances(data);
@@ -113,14 +102,12 @@ export function useBalanceQuery(options?: UseBalanceOptions) {
         throw error;
       }
     },
+    initialData: options?.initialData,
     staleTime: 1000 * 60 * 5, // 5분 동안은 데이터를 신선한 것으로 간주
-    refetchInterval: refetchInterval, // 설정된 간격마다 자동 갱신
-    refetchOnWindowFocus: true, // 윈도우 포커스 시 즉시 갱신
+    refetchInterval: refetchInterval > 0 ? refetchInterval : false,
+    refetchOnWindowFocus: false, // 윈도우 포커스 시 즉시 갱신 방지 (서버 사이드 위주)
     retry: 1,
-    // 첫 로드 시 이전 캐시 데이터 사용 방지
-    placeholderData: undefined,
-    // 초기 로드 완료 전까지 이전 데이터 표시 안함
-    refetchOnMount: "always",
+    refetchOnMount: options?.initialData ? false : "always",
   });
 }
 
@@ -132,7 +119,11 @@ export function useRefreshBalance() {
   const { accounts } = useAccountStore();
 
   return useMutation({
-    mutationFn: () => fetchBalances(),
+    mutationFn: async () => {
+      const result = await getBalanceAction();
+      if (!result.success) throw new Error(result.error);
+      return result.data || [];
+    },
     onSuccess: (balances) => {
       queryClient.setQueryData(
         ["balances", accounts.map((a) => a.accountNo).join(",")],

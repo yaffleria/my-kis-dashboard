@@ -8,16 +8,6 @@ export * from "./utils";
 // 상수
 export * from "./constants";
 
-// KIS API (중복 함수 제외하고 명시적 export)
-export {
-  getExchangeRate,
-  getAccountBalance,
-  inquireBalance,
-  inquireOverseasBalance,
-  getNews,
-  type TokenData,
-} from "./kis-api";
-
 // 서버 로거 (서버 사이드 전용)
 export {
   serverLog,

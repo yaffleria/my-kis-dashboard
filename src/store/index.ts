@@ -6,22 +6,14 @@ import type { Account, AccountBalance, PortfolioSummary } from "@/types";
  * 계좌 설정 스토어 타입
  */
 interface AccountStore {
-  // State
   accounts: Account[];
-  selectedAccountNo: string | null;
-  hiddenAccountKeys: string[]; // 'accountNo-productCode' format
-
-  // Actions
   setAccounts: (accounts: Account[]) => void;
   addAccount: (account: Account) => void;
   removeAccount: (accountNo: string) => void;
+  selectedAccountNo: string | null;
   setSelectedAccount: (accountNo: string | null) => void;
-  toggleAccountVisibility: (accountKey: string) => void;
 }
 
-/**
- * 대시보드 데이터 스토어 타입
- */
 /**
  * 대시보드 데이터 스토어 타입
  */
@@ -44,20 +36,12 @@ interface DashboardStore {
 
 /**
  * 계좌 설정 스토어
- * - 사용자가 등록한 계좌 목록 관리
- * - localStorage에 영속화
  */
 export const useAccountStore = create<AccountStore>()(
   persist(
     (set) => ({
-      // Initial State
       accounts: [],
-      selectedAccountNo: null,
-      hiddenAccountKeys: [],
-
-      // Actions
       setAccounts: (accounts) => set({ accounts }),
-
       addAccount: (account) =>
         set((state) => {
           const exists = state.accounts.some(
@@ -66,34 +50,17 @@ export const useAccountStore = create<AccountStore>()(
               a.productCode === account.productCode
           );
           if (exists) return state;
-          return {
-            accounts: [...state.accounts, account],
-          };
+          return { accounts: [...state.accounts, account] };
         }),
-
-      removeAccount: (accountNo) =>
+      removeAccount: (accountNo: string) =>
         set((state) => ({
           accounts: state.accounts.filter((a) => a.accountNo !== accountNo),
-          selectedAccountNo:
-            state.selectedAccountNo === accountNo
-              ? null
-              : state.selectedAccountNo,
         })),
-
+      selectedAccountNo: null,
       setSelectedAccount: (accountNo) => set({ selectedAccountNo: accountNo }),
-
-      toggleAccountVisibility: (accountKey) =>
-        set((state) => {
-          const isHidden = state.hiddenAccountKeys.includes(accountKey);
-          return {
-            hiddenAccountKeys: isHidden
-              ? state.hiddenAccountKeys.filter((key) => key !== accountKey)
-              : [...state.hiddenAccountKeys, accountKey],
-          };
-        }),
     }),
     {
-      name: "kis-accounts", // localStorage key
+      name: "kis-accounts",
     }
   )
 );
