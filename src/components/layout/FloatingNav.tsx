@@ -7,13 +7,20 @@ import { cn } from "@/lib/utils";
 import { HoldingsTable } from "@/components/dashboard/HoldingsTable";
 import { useBalanceQuery } from "@/hooks/useBalance";
 import { useDashboardStore } from "@/store";
+import { usePathname } from "next/navigation";
 
 export function FloatingNav() {
   const [isOpen, setIsOpen] = useState(false);
   const { balances, portfolioSummary } = useDashboardStore();
   const { isPending } = useBalanceQuery();
+  const pathname = usePathname();
 
   const totalAsset = portfolioSummary?.totalAsset || 0;
+
+  // Don't show on login page
+  if (pathname === "/login") {
+    return null;
+  }
 
   return (
     <>
