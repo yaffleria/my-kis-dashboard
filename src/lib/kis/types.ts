@@ -25,6 +25,7 @@ export interface KisOverseasBalanceItem {
   frcr_evlu_pfls_amt: string;
   evlu_pfls_rt: string;
   frcr_pchs_amt1: string;
+  currency_code?: string; // Appended by Client
 }
 
 export interface StockDailyPriceItem {

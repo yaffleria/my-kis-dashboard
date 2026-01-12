@@ -165,7 +165,8 @@ export class KisClient {
   }
 
   /**
-   * Overseas Stock Balance Inquiry
+  /**
+   * Overseas Stock Balance Inquiry (Multi-Exchange Support)
    */
   public async inquireOverseasBalance(
     accountNo: string,
@@ -173,34 +174,61 @@ export class KisClient {
     appKey: string,
     appSecret: string
   ): Promise<{ output1: KisOverseasBalanceItem[]; output2: unknown }> {
+    const EXCHANGES = [
+      { code: "NASD", cy: "USD" },
+      { code: "NYSE", cy: "USD" },
+      { code: "AMEX", cy: "USD" },
+      { code: "TKSE", cy: "JPY" }, // Japan
+      { code: "SEHK", cy: "HKD" }, // Hong Kong
+    ];
+
     try {
       const trId = this.env === "prod" ? "TTTS3012R" : "VTTS3012R";
       const headers = await this.getHeaders(trId, appKey, appSecret);
-      const response = await axios.get(
-        `${this.baseUrl}/uapi/overseas-stock/v1/trading/inquire-balance`,
-        {
-          headers,
-          params: {
-            CANO: accountNo,
-            ACNT_PRDT_CD: productCode,
-            OVRS_EXCG_CD: "NASD",
-            TR_CRCY_CD: "USD",
-            CTX_AREA_FK200: "",
-            CTX_AREA_NK200: "",
-          },
-        }
-      );
 
-      if (response.data.rt_cd !== "0") {
-        console.warn(
-          `[KIS Info] Overseas Balance (${accountNo}): ${response.data.msg1}`
-        );
-        return { output1: [], output2: {} };
-      }
+      const promises = EXCHANGES.map(async (exch) => {
+        try {
+          const response = await axios.get(
+            `${this.baseUrl}/uapi/overseas-stock/v1/trading/inquire-balance`,
+            {
+              headers,
+              params: {
+                CANO: accountNo,
+                ACNT_PRDT_CD: productCode,
+                OVRS_EXCG_CD: exch.code,
+                TR_CRCY_CD: exch.cy,
+                CTX_AREA_FK200: "",
+                CTX_AREA_NK200: "",
+              },
+            }
+          );
+
+          if (response.data.rt_cd !== "0") {
+            // Ignore common "no data" errors to avoid log spam
+            // msg1 example: "조회할 내역이 없습니다."
+            return [];
+          }
+
+          const items = (response.data.output1 ||
+            []) as KisOverseasBalanceItem[];
+
+          return items.map((item) => ({ ...item, currency_code: exch.cy }));
+        } catch (error) {
+          // Log specific exchange error but allow others to succeed
+          console.warn(
+            `[KIS Info] Overseas Balance Partial Fail (${exch.code}):`,
+            axios.isAxiosError(error) ? error.message : String(error)
+          );
+          return [];
+        }
+      });
+
+      const results = await Promise.all(promises);
+      const output1 = results.flat();
 
       return {
-        output1: response.data.output1 || [],
-        output2: response.data.output2 || {},
+        output1,
+        output2: {}, // Aggregated summary not easily possible, leaving empty
       };
     } catch (error) {
       this.handleError("Overseas Balance", accountNo, error);

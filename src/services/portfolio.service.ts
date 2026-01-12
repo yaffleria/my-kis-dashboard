@@ -114,7 +114,18 @@ export async function fetchAccountBalance(
       domesticPromise,
       overseasPromise,
     ]);
-    const USD_KRW_RATE = await getExchangeRate();
+
+    const [rateUSD, rateJPY, rateHKD] = await Promise.all([
+      getExchangeRate("USD"),
+      getExchangeRate("JPY"), // 1 JPY -> KRW (approx 9.0 ~ 9.5)
+      getExchangeRate("HKD"),
+    ]);
+
+    const getAppliedRate = (code?: string) => {
+      if (code === "JPY") return rateJPY;
+      if (code === "HKD") return rateHKD;
+      return rateUSD; // Default/Fallback
+    };
 
     // 3. Map Domestic Holdings
     const domHoldings = (domRes.output1 as KisBalanceOutput1[]).map((item) => ({
@@ -131,17 +142,20 @@ export async function fetchAccountBalance(
 
     // 4. Map Overseas Holdings (Convert to KRW)
     const overHoldings = (overRes.output1 as KisOverseasBalanceItem[]).map(
-      (item) => ({
-        stockCode: item.ovrs_pdno,
-        stockName: item.ovrs_item_name,
-        quantity: parseNumber(item.ovrs_cblc_qty),
-        buyAvgPrice: parseNumber(item.pchs_avg_pric) * USD_KRW_RATE,
-        currentPrice: parseNumber(item.now_pric2) * USD_KRW_RATE,
-        evaluationAmount: parseNumber(item.ovrs_stck_evlu_amt) * USD_KRW_RATE,
-        profitLossAmount: parseNumber(item.frcr_evlu_pfls_amt) * USD_KRW_RATE,
-        profitLossRate: parseNumber(item.evlu_pfls_rt),
-        buyAmount: parseNumber(item.frcr_pchs_amt1) * USD_KRW_RATE,
-      })
+      (item) => {
+        const rate = getAppliedRate(item.currency_code);
+        return {
+          stockCode: item.ovrs_pdno,
+          stockName: item.ovrs_item_name,
+          quantity: parseNumber(item.ovrs_cblc_qty),
+          buyAvgPrice: parseNumber(item.pchs_avg_pric) * rate,
+          currentPrice: parseNumber(item.now_pric2) * rate,
+          evaluationAmount: parseNumber(item.ovrs_stck_evlu_amt) * rate,
+          profitLossAmount: parseNumber(item.frcr_evlu_pfls_amt) * rate,
+          profitLossRate: parseNumber(item.evlu_pfls_rt),
+          buyAmount: parseNumber(item.frcr_pchs_amt1) * rate,
+        };
+      }
     );
 
     const holdings = [...domHoldings, ...overHoldings].filter(
