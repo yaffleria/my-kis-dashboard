@@ -7,10 +7,32 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
   ),
-  title: "Blanc Cosmos",
+  title: "Blanc",
   description: "Advanced Portfolio Visualization",
   icons: {
     icon: "/favicon.png",
+  },
+  openGraph: {
+    title: "Blanc",
+    description: "Advanced Portfolio Visualization",
+    url: "/",
+    siteName: "Blanc",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Blanc Dashboard",
+      },
+    ],
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Blanc",
+    description: "Advanced Portfolio Visualization",
+    images: ["/og-image.png"],
   },
 };
 
