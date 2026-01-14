@@ -152,6 +152,7 @@ export function VoronoiPortfolio({
         evaluationAmount: number;
         buyAmount: number;
         profitLossRate: number;
+        market?: "US" | "KR" | "CA";
       }
     > = {};
 
@@ -167,20 +168,26 @@ export function VoronoiPortfolio({
             evaluationAmount: 0,
             buyAmount: 0,
             profitLossRate: 0,
+            market: h.market,
           };
         }
         aggregated[h.stockCode].evaluationAmount += h.evaluationAmount;
         aggregated[h.stockCode].buyAmount += h.buyAmount;
         aggregated[h.stockCode].profitLossRate = h.profitLossRate;
+        // market이 아직 없으면 현재 holding의 market으로 설정
+        if (!aggregated[h.stockCode].market && h.market) {
+          aggregated[h.stockCode].market = h.market;
+        }
         totalValue += h.evaluationAmount;
       });
     });
 
     const nodes = Object.values(aggregated).map((h) => {
-      // 미국 주식(티커) 판별 고도화:
-      // 한국 상품 코드는 보통 6자리(예: 005930, 0019K0)이므로,
-      // 6자리가 아니거나 숫자가 아예 없는 경우를 티커(미국 주식)로 간주합니다.
-      const isUS = h.stockCode.length !== 6 || !/\d/.test(h.stockCode);
+      // market 필드가 있으면 사용, 없으면 기존 휴리스틱으로 폴백
+      // 한국 주식: 이름 표시, 미국/캐나다 등 해외 주식: ticker 표시
+      const isKorean =
+        h.market === "KR" ||
+        (!h.market && h.stockCode.length === 6 && /\d/.test(h.stockCode));
 
       const profitLoss = h.evaluationAmount - h.buyAmount;
       const profitRate =
@@ -188,7 +195,7 @@ export function VoronoiPortfolio({
 
       return {
         id: h.stockCode,
-        name: isUS ? h.stockCode : h.stockName,
+        name: isKorean ? h.stockName : h.stockCode,
         fullName: h.stockName,
         value: Math.max(0.1, h.evaluationAmount),
         profitRate: profitRate,

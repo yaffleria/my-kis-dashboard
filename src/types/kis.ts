@@ -31,6 +31,7 @@ export interface StockHolding {
   profitLossAmount: number; // 평가손익금액 (evlu_pfls_amt)
   profitLossRate: number; // 평가손익률 (evlu_pfls_rt)
   buyAmount: number; // 매입금액 (pchs_amt)
+  market?: "US" | "KR" | "CA"; // 시장 구분 (US: 미국, KR: 한국, CA: 캐나다)
 }
 
 /**

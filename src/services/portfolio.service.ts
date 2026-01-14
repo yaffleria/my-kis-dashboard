@@ -138,6 +138,7 @@ export async function fetchAccountBalance(
       profitLossAmount: parseNumber(item.evlu_pfls_amt),
       profitLossRate: parseNumber(item.evlu_pfls_rt),
       buyAmount: parseNumber(item.pchs_amt),
+      market: "KR" as const,
     }));
 
     // 4. Map Overseas Holdings (Convert to KRW)
@@ -154,6 +155,7 @@ export async function fetchAccountBalance(
           profitLossAmount: parseNumber(item.frcr_evlu_pfls_amt) * rate,
           profitLossRate: parseNumber(item.evlu_pfls_rt),
           buyAmount: parseNumber(item.frcr_pchs_amt1) * rate,
+          market: "US" as const,
         };
       }
     );
@@ -228,16 +230,16 @@ export async function fetchAccountBalance(
   }
 }
 
+type ManualMarket = "US" | "KR" | "CA";
+
 interface ManualHolding {
   accountNo: string;
   productCode: string;
   code: string;
-  name: string;
   qty: number | string;
-  price?: number | string;
   buyPrice: number | string;
-  currency: string;
-  exchangeRate?: number | string;
+  market: ManualMarket;
+  currentPrice?: number | string; // 현재가 직접 입력 (선택, 해당 통화 단위)
 }
 
 /**
@@ -283,21 +285,34 @@ export async function applyManualHoldings(
       const manualBuyPrice = Number(item.buyPrice || 0);
       if (manualBuyPrice <= 0) continue;
 
-      let manualPrice = Number(item.price || 0);
-      const rawRate = Number(item.exchangeRate || 0);
-      const appliedRate =
-        item.currency === "KRW" ? 1 : rawRate > 0 ? rawRate : 1;
+      // Determine market & FX rate
+      const market: ManualMarket = item.market;
 
-      // Find Existing
-      const existingIndex = accResult.holdings.findIndex(
-        (h) => h.stockCode === item.code
-      );
+      // KR, US는 기존 KIS 가격/환율 체계를 그대로 사용 (KIS 잔고와 병합 가능)
+      // CA는 Massive + FX로 별도 처리 (KIS API에서 조회 불가한 거래소이므로 병합하지 않음)
+
+      // Find Existing (CA 마켓은 KIS 잔고와 병합하지 않음 - 동일 티커가 미국에 있을 수 있음)
+      const existingIndex =
+        market === "CA"
+          ? -1
+          : accResult.holdings.findIndex((h) => h.stockCode === item.code);
 
       if (existingIndex !== -1) {
         // Merge
         const existing = accResult.holdings[existingIndex];
         const totalQty = existing.quantity + manualQty;
-        const manualBuyAmt = manualBuyPrice * manualQty * appliedRate;
+
+        // manual 쪽 매수금액도 항상 원화 기준으로 맞춘다.
+        let manualBuyAmt = manualBuyPrice * manualQty;
+        if (market === "US") {
+          const rateUSD = await getExchangeRate("USD");
+          manualBuyAmt *= rateUSD;
+        } else if (market === "CA") {
+          const rateCAD = await getExchangeRate("CAD");
+          manualBuyAmt *= rateCAD;
+        }
+        // KR은 이미 원화이므로 환율 적용 불필요
+
         const totalBuyAmt = existing.buyAmount + manualBuyAmt;
         const currentPrice = existing.currentPrice; // Trust API price
         const totalEvalAmt = currentPrice * totalQty;
@@ -314,11 +329,15 @@ export async function applyManualHoldings(
           profitLossAmount: totalProfitLossAmt,
           profitLossRate: totalProfitLossRt,
           buyAvgPrice: newBuyAvgPrice,
+          market: existing.market ?? market,
         };
       } else {
         // Add New
-        if (manualPrice === 0 && item.currency === "KRW") {
-          // Fetch Real Price if KRW and missing price
+        let currentPriceKRW = 0;
+        let buyPriceKRW = manualBuyPrice;
+
+        if (market === "KR") {
+          // 한국 종목은 한국투자증권 API를 통해 가격 조회 (KRW 단위)
           const accountInfo = allAccounts.find(
             (a) =>
               a.accountNo === accResult.account.accountNo &&
@@ -329,29 +348,96 @@ export async function applyManualHoldings(
             accountInfo?.appSecret || process.env.KIS_APP_SECRET;
 
           if (appKey && appSecret) {
-            manualPrice = await kisClient.getStockCurrentPrice(
+            currentPriceKRW = await kisClient.getStockCurrentPrice(
               item.code,
               appKey,
               appSecret
             );
           }
+          // buyPriceKRW는 이미 원화이므로 그대로 사용
+        } else if (market === "US") {
+          // 미국 종목: KIS 해외잔고에서 조회된 종목이 없으면 현재가를 알 수 없음
+          // buyPrice는 USD 단위이므로 환율 적용
+          const rateUSD = await getExchangeRate("USD");
+          buyPriceKRW = manualBuyPrice * rateUSD;
+          // currentPriceKRW는 0 (해외 개별 종목 시세 조회 API가 없음)
+          // 기존 잔고와 병합되는 경우에만 현재가 사용 가능
+          console.warn(
+            `[Manual] US stock ${item.code} added without current price (not in KIS balance)`
+          );
+        } else if (market === "CA") {
+          // 캐나다 종목은 Google Finance + 환율 적용 (매수가/현재가 모두 원화 기준으로 환산)
+          const rateCAD = await getExchangeRate("CAD");
+          buyPriceKRW = manualBuyPrice * rateCAD;
+
+          // MANUAL_PORTFOLIO에 currentPrice가 지정되어 있으면 사용
+          if (item.currentPrice && Number(item.currentPrice) > 0) {
+            currentPriceKRW = Number(item.currentPrice) * rateCAD;
+          } else {
+            // Google Finance에서 가격 조회 (CVE = Canadian Venture Exchange)
+            try {
+              const resp = await fetch(
+                `https://www.google.com/finance/quote/${encodeURIComponent(
+                  item.code
+                )}:CVE`,
+                {
+                  headers: {
+                    "User-Agent":
+                      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                  },
+                }
+              );
+              if (resp.ok) {
+                const html = await resp.text();
+                // Google Finance HTML에서 가격 추출: data-last-price="8.7" 패턴
+                const priceMatch = html.match(/data-last-price="([\d.]+)"/);
+                if (priceMatch && priceMatch[1]) {
+                  const price = parseFloat(priceMatch[1]);
+                  if (price > 0) {
+                    currentPriceKRW = price * rateCAD;
+                  }
+                } else {
+                  // 대안: AF_initDataCallback에서 가격 추출
+                  const jsonMatch = html.match(
+                    /\["[^"]+",\["[^"]+","CVE"\],"[^"]+",\d+,"CAD",\[([\d.]+),/
+                  );
+                  if (jsonMatch && jsonMatch[1]) {
+                    const price = parseFloat(jsonMatch[1]);
+                    if (price > 0) {
+                      currentPriceKRW = price * rateCAD;
+                    }
+                  }
+                }
+              } else {
+                console.warn(
+                  `[Google Finance] Failed to fetch CA price for ${item.code}: ${resp.status}`
+                );
+              }
+            } catch (e) {
+              console.error(
+                `[Google Finance] Error fetching CA price for ${item.code}:`,
+                e
+              );
+            }
+          }
         }
 
-        const evalAmt = manualPrice * manualQty * appliedRate;
-        const buyAmt = manualBuyPrice * manualQty * appliedRate;
+        const evalAmt = currentPriceKRW * manualQty;
+        const buyAmt = buyPriceKRW * manualQty;
         const profitLossAmt = evalAmt - buyAmt;
         const profitLossRt = buyAmt > 0 ? (profitLossAmt / buyAmt) * 100 : 0;
 
         accResult.holdings.push({
           stockCode: item.code,
-          stockName: item.name,
+          stockName: item.code,
           quantity: manualQty,
-          buyAvgPrice: manualBuyPrice * appliedRate,
-          currentPrice: manualPrice * appliedRate,
+          buyAvgPrice: buyPriceKRW,
+          currentPrice: currentPriceKRW,
           evaluationAmount: evalAmt,
           profitLossAmount: profitLossAmt,
           profitLossRate: profitLossRt,
           buyAmount: buyAmt,
+          market,
         });
       }
     }

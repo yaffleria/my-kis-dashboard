@@ -29,6 +29,31 @@ export class KisClient {
     this.baseUrl = KIS_API_URL[this.env];
   }
 
+  /**
+   * Invalidate cached token in DB when KIS reports it as expired.
+   */
+  private async invalidateTokenOnExpiry(appKey: string, error: unknown) {
+    if (!axios.isAxiosError(error)) return;
+
+    const msg1 = (error.response?.data as any)?.msg1;
+    if (typeof msg1 === "string" && msg1.includes("기간이 만료된 token")) {
+      try {
+        await prisma.kisToken.delete({
+          where: { type: `kis_${appKey}` },
+        });
+        console.warn(
+          `[KIS Token] Deleted expired token for appKey=${appKey} (msg1='${msg1}')`
+        );
+      } catch (e) {
+        // 이미 삭제되었거나 존재하지 않아도 무시
+        console.warn(
+          `[KIS Token] Failed to delete expired token for appKey=${appKey}:`,
+          e
+        );
+      }
+    }
+  }
+
   public static getInstance(): KisClient {
     if (!KisClient.instance) {
       KisClient.instance = new KisClient();
@@ -55,8 +80,9 @@ export class KisClient {
           where: { type: `kis_${appKey}` },
         });
 
-        const BUFFER_TIME = 60 * 1000;
-        if (dbToken && dbToken.expiresAt.getTime() > Date.now() + BUFFER_TIME) {
+        // 만료 시간이 실제로 현재 시각을 지난 경우에만 재발급.
+        // BUFFER_TIME 을 두지 않고, KIS가 제공한 만료시각(expiresAt) 기준으로만 판단한다.
+        if (dbToken && dbToken.expiresAt.getTime() > Date.now()) {
           return dbToken.token;
         }
 
@@ -159,6 +185,7 @@ export class KisClient {
         output2: response.data.output2 || {},
       };
     } catch (error) {
+      await this.invalidateTokenOnExpiry(appKey, error);
       this.handleError("Domestic Balance", accountNo, error);
       throw error;
     }
@@ -214,6 +241,7 @@ export class KisClient {
 
           return items.map((item) => ({ ...item, currency_code: exch.cy }));
         } catch (error) {
+          await this.invalidateTokenOnExpiry(appKey, error);
           // Log specific exchange error but allow others to succeed
           console.warn(
             `[KIS Info] Overseas Balance Partial Fail (${exch.code}):`,
@@ -245,6 +273,17 @@ export class KisClient {
     appSecret: string
   ): Promise<number> {
     try {
+      // FHKST01010100 /uapi/domestic-stock/v1/quotations/inquire-price 는
+      // 문서상 "[국내주식] 기본시세, 주식현재가 시세" 전용이므로
+      // 순수 6자리 숫자 종목(보통/우선주, ETF/ETN 등)만 대상으로 하고,
+      // 채권/권리 등 문자 포함 코드(예: 0019K0)는 이 엔드포인트를 타지 않도록 방어한다.
+      if (!/^\d{6}$/.test(stockCode)) {
+        console.warn(
+          `[KIS Info] Skip getStockCurrentPrice for non-equity code: ${stockCode}`
+        );
+        return 0;
+      }
+
       const headers = await this.getHeaders("FHKST01010100", appKey, appSecret);
       const response = await axios.get(
         `${this.baseUrl}/uapi/domestic-stock/v1/quotations/inquire-price`,
@@ -262,7 +301,18 @@ export class KisClient {
       }
       return parseInt(response.data.output.stck_prpr || "0", 10);
     } catch (error) {
-      console.error(`[KIS Error] Price Fetch (${stockCode}):`, error);
+      await this.invalidateTokenOnExpiry(appKey, error);
+      // KIS가 특정 코드(예: 일부 ETF/채권/권리)에 대해 500을 반환하는 경우가 있어
+      // 스택 전체를 찍지 않고 요약 정보만 경고로 남긴다.
+      if (axios.isAxiosError(error)) {
+        console.warn(
+          `[KIS Error] Price Fetch (${stockCode}): status=${error.response?.status} message=${error.message}`
+        );
+      } else {
+        console.warn(
+          `[KIS Error] Price Fetch (${stockCode}): ${String(error)}`
+        );
+      }
       return 0;
     }
   }
