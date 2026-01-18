@@ -46,3 +46,10 @@ next-env.d.ts
 
 /src/generated/prisma
 
+# Editor/Agent configurations
+.agent/
+.claude/
+.cursor/
+.gemini/
+.opencode/
+
