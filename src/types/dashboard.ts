@@ -51,6 +51,8 @@ export interface HoldingsRow {
   evaluationAmount: number;
   profitLossRate: number;
   weight?: number;
+  avgPrice?: number;
+  totalBuyAmount?: number;
 }
 
 /**

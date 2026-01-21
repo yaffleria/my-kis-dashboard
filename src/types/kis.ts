@@ -175,3 +175,22 @@ export interface KisBalanceOutput2 {
 export interface AccountConfig {
   accounts: Account[];
 }
+
+/**
+ * 보안을 위해 민감한 정보를 제외한 보유 종목 데이터
+ * 클라이언트로 전송될 때는 이 타입을 사용합니다.
+ */
+export interface SafeHolding {
+  stockCode: string;
+  stockName: string;
+  weight: number; // 비중 (%)
+  profitLossRate: number; // 수익률 (%)
+}
+
+/**
+ * 안전한 잔고 응답 데이터
+ */
+export interface SafeBalanceResponse {
+  holdings: SafeHolding[];
+  lastUpdated: string;
+}

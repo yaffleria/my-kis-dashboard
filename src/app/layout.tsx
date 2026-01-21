@@ -1,28 +1,27 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers, EnvInitializer } from "@/components";
-import { FloatingNav } from "@/components/layout/FloatingNav";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000",
   ),
-  title: "Blanc",
+  title: "Charlotte",
   description: "Advanced Portfolio Visualization",
   icons: {
-    icon: "/favicon.png",
+    icon: "/my-kis-dashboard-logo.jpg",
   },
   openGraph: {
-    title: "Blanc",
+    title: "Charlotte",
     description: "Advanced Portfolio Visualization",
     url: "/",
-    siteName: "Blanc",
+    siteName: "Charlotte",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "/banner.jpg",
         width: 1200,
         height: 630,
-        alt: "Blanc Dashboard",
+        alt: "Charlotte Dashboard",
       },
     ],
     locale: "ko_KR",
@@ -30,9 +29,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Blanc",
+    title: "Charlotte",
     description: "Advanced Portfolio Visualization",
-    images: ["/og-image.jpg"],
+    images: ["/banner.jpg"],
   },
 };
 
@@ -44,10 +43,14 @@ export default function RootLayout({
   return (
     <html lang="ko" className="dark" suppressHydrationWarning>
       <head>
-        <link href="https://fonts.cdnfonts.com/css/inter" rel="stylesheet" />
+        <link
+          rel="stylesheet"
+          as="style"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"
+        />
       </head>
       <body
-        className="antialiased min-h-screen selection:bg-violet-500/30 bg-black text-foreground overflow-hidden"
+        className="antialiased min-h-screen selection:bg-primary/30 bg-background text-foreground overflow-hidden font-sans"
         suppressHydrationWarning
       >
         <Providers>
@@ -74,8 +77,8 @@ export default function RootLayout({
                       isPension:
                         acc.isPension ??
                         ["22", "29"].includes(String(acc.productCode || "")),
-                    })
-                  )
+                    }),
+                  ),
                 );
               } catch {
                 return undefined;
@@ -86,8 +89,6 @@ export default function RootLayout({
           <main className="relative w-full h-screen overflow-hidden">
             {children}
           </main>
-
-          <FloatingNav />
         </Providers>
       </body>
     </html>

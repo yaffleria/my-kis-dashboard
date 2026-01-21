@@ -5,72 +5,83 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Cosmic Theme - Light (Not primary focus but fallback) */
+  /* Toss-inspired Light Theme */
   --background: #ffffff;
-  --foreground: #030712;
-
-  --card: #f8fafc;
-  --card-foreground: #030712;
+  --foreground: #191f28;
+  --surface: #f2f4f6;
+  --card: #ffffff;
+  --card-foreground: #191f28;
 
   --popover: #ffffff;
-  --popover-foreground: #030712;
+  --popover-foreground: #191f28;
 
-  --primary: #7c3aed; /* Violet */
+  --primary: #3182f6;
   --primary-foreground: #ffffff;
 
-  --secondary: #06b6d4; /* Cyan */
-  --secondary-foreground: #ffffff;
+  --secondary: #b0b8c1;
+  --secondary-foreground: #191f28;
 
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  --muted: #f2f4f6;
+  --muted-foreground: #4e5968;
 
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
+  --accent: #f2f4f6;
+  --accent-foreground: #191f28;
 
-  --destructive: #ef4444;
+  --destructive: #f04452;
   --destructive-foreground: #ffffff;
 
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #7c3aed;
+  --border: #e5e8eb;
+  --input: #e5e8eb;
+  --ring: #3182f6;
 
   --radius: 0.75rem;
+
+  /* Semantic Colors */
+  --positive: #34c759;
+  --negative: #ff3b30;
+  --success: #4ade80;
 }
 
 .dark {
-  /* Cosmic Theme - Dark (Deep Space) */
-  --background: #030712; /* Deep Space Black */
-  --foreground: #f8fafc; /* Starlight */
+  /* Toss-inspired Dark Theme */
+  --background: #191f28;
+  --foreground: #ffffff;
+  --surface: #202632;
+  --card: #202632;
+  --card-foreground: #ffffff;
 
-  --card: rgba(17, 24, 39, 0.4); /* Glass Dark */
-  --card-foreground: #f8fafc;
+  --popover: #202632;
+  --popover-foreground: #ffffff;
 
-  --popover: #030712;
-  --popover-foreground: #f8fafc;
-
-  --primary: #8b5cf6; /* Nebula Violet */
+  --primary: #3182f6;
   --primary-foreground: #ffffff;
 
-  --secondary: #0891b2; /* Nebula Cyan */
-  --secondary-foreground: #ffffff;
+  --secondary: #b0b8c1;
+  --secondary-foreground: #191f28;
 
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
+  --muted: #333d4b;
+  --muted-foreground: #8b95a1;
 
-  --accent: rgba(139, 92, 246, 0.15); /* Faint Violet */
-  --accent-foreground: #f8fafc;
+  --accent: #333d4b;
+  --accent-foreground: #ffffff;
 
-  --destructive: #991b1b;
+  --destructive: #f04452;
   --destructive-foreground: #ffffff;
 
-  --border: rgba(148, 163, 184, 0.1);
-  --input: rgba(148, 163, 184, 0.1);
-  --ring: #8b5cf6;
+  --border: #333d4b;
+  --input: #333d4b;
+  --ring: #3182f6;
+
+  /* Semantic Colors */
+  --positive: #34c759;
+  --negative: #ff3b30;
+  --success: #4ade80;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -88,6 +99,9 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-success: var(--success);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -103,26 +117,9 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-feature-settings: "rlig" 1, "calt" 1;
-}
-
-/* Glassmorphism Utilities */
-.glass-panel {
-  background: rgba(3, 7, 18, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-}
-
-.glass-panel-hover:hover {
-  background: rgba(3, 7, 18, 0.6);
-  border-color: rgba(139, 92, 246, 0.3);
-}
-
-/* Cosmic Gradient Text */
-.text-cosmic {
-  @apply bg-clip-text text-transparent bg-linear-to-r from-violet-400 to-cyan-400;
+  font-feature-settings:
+    "rlig" 1,
+    "calt" 1;
 }
 
 /* Scrollbar */
@@ -133,6 +130,12 @@ body {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
 ::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.2);
   border-radius: 99px;

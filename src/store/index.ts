@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Account, AccountBalance, PortfolioSummary } from "@/types";
+import type { Account } from "@/types";
 
 /**
  * 계좌 설정 스토어 타입
@@ -19,18 +19,14 @@ interface AccountStore {
  */
 interface DashboardStore {
   // State
-  balances: AccountBalance[];
-  portfolioSummary: PortfolioSummary | null;
+  safeBalance: import("@/types").SafeBalanceResponse | null;
   isLoading: boolean;
   error: string | null;
-  lastUpdated: string | null;
 
   // Actions
-  setBalances: (balances: AccountBalance[]) => void;
-  setPortfolioSummary: (summary: PortfolioSummary) => void;
+  setSafeBalance: (data: import("@/types").SafeBalanceResponse) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-  setLastUpdated: (date: string) => void;
   clearData: () => void;
 }
 
@@ -47,7 +43,7 @@ export const useAccountStore = create<AccountStore>()(
           const exists = state.accounts.some(
             (a) =>
               a.accountNo === account.accountNo &&
-              a.productCode === account.productCode
+              a.productCode === account.productCode,
           );
           if (exists) return state;
           return { accounts: [...state.accounts, account] };
@@ -61,40 +57,31 @@ export const useAccountStore = create<AccountStore>()(
     }),
     {
       name: "kis-accounts",
-    }
-  )
+    },
+  ),
 );
 
 /**
  * 대시보드 데이터 스토어
- * - API로부터 받은 잔고 데이터 관리
- * - 포트폴리오 요약, 차트 데이터 등
+ * - API로부터 받은 잔고 데이터 관리 (SafeVer)
  */
 export const useDashboardStore = create<DashboardStore>((set) => ({
   // Initial State
-  balances: [],
-  portfolioSummary: null,
+  safeBalance: null,
   isLoading: false,
   error: null,
-  lastUpdated: null,
 
   // Actions
-  setBalances: (balances) => set({ balances }),
-
-  setPortfolioSummary: (summary) => set({ portfolioSummary: summary }),
+  setSafeBalance: (data) => set({ safeBalance: data }),
 
   setLoading: (loading) => set({ isLoading: loading }),
 
   setError: (error) => set({ error }),
 
-  setLastUpdated: (date) => set({ lastUpdated: date }),
-
   clearData: () =>
     set({
-      balances: [],
-      portfolioSummary: null,
+      safeBalance: null,
       error: null,
-      lastUpdated: null,
     }),
 }));
 

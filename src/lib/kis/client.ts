@@ -35,20 +35,20 @@ export class KisClient {
   private async invalidateTokenOnExpiry(appKey: string, error: unknown) {
     if (!axios.isAxiosError(error)) return;
 
-    const msg1 = (error.response?.data as any)?.msg1;
+    const msg1 = (error.response?.data as { msg1?: string })?.msg1;
     if (typeof msg1 === "string" && msg1.includes("기간이 만료된 token")) {
       try {
         await prisma.kisToken.delete({
           where: { type: `kis_${appKey}` },
         });
         console.warn(
-          `[KIS Token] Deleted expired token for appKey=${appKey} (msg1='${msg1}')`
+          `[KIS Token] Deleted expired token for appKey=${appKey} (msg1='${msg1}')`,
         );
       } catch (e) {
         // 이미 삭제되었거나 존재하지 않아도 무시
         console.warn(
           `[KIS Token] Failed to delete expired token for appKey=${appKey}:`,
-          e
+          e,
         );
       }
     }
@@ -66,7 +66,7 @@ export class KisClient {
    */
   public async getAccessToken(
     appKey: string,
-    appSecret: string
+    appSecret: string,
   ): Promise<string> {
     // 1. Check Memory Lock
     if (pendingRequests.has(appKey)) {
@@ -152,7 +152,7 @@ export class KisClient {
     accountNo: string,
     productCode: string,
     appKey: string,
-    appSecret: string
+    appSecret: string,
   ): Promise<{ output1: KisHoldingItem[]; output2: unknown }> {
     try {
       const headers = await this.getHeaders("TTTC8434R", appKey, appSecret);
@@ -173,7 +173,7 @@ export class KisClient {
             CTX_AREA_FK100: "",
             CTX_AREA_NK100: "",
           },
-        }
+        },
       );
 
       if (response.data.rt_cd !== "0") {
@@ -199,7 +199,7 @@ export class KisClient {
     accountNo: string,
     productCode: string,
     appKey: string,
-    appSecret: string
+    appSecret: string,
   ): Promise<{ output1: KisOverseasBalanceItem[]; output2: unknown }> {
     const EXCHANGES = [
       { code: "NASD", cy: "USD" },
@@ -227,7 +227,7 @@ export class KisClient {
                 CTX_AREA_FK200: "",
                 CTX_AREA_NK200: "",
               },
-            }
+            },
           );
 
           if (response.data.rt_cd !== "0") {
@@ -245,7 +245,7 @@ export class KisClient {
           // Log specific exchange error but allow others to succeed
           console.warn(
             `[KIS Info] Overseas Balance Partial Fail (${exch.code}):`,
-            axios.isAxiosError(error) ? error.message : String(error)
+            axios.isAxiosError(error) ? error.message : String(error),
           );
           return [];
         }
@@ -270,7 +270,7 @@ export class KisClient {
   public async getStockCurrentPrice(
     stockCode: string,
     appKey: string,
-    appSecret: string
+    appSecret: string,
   ): Promise<number> {
     try {
       // FHKST01010100 /uapi/domestic-stock/v1/quotations/inquire-price 는
@@ -279,7 +279,7 @@ export class KisClient {
       // 채권/권리 등 문자 포함 코드(예: 0019K0)는 이 엔드포인트를 타지 않도록 방어한다.
       if (!/^\d{6}$/.test(stockCode)) {
         console.warn(
-          `[KIS Info] Skip getStockCurrentPrice for non-equity code: ${stockCode}`
+          `[KIS Info] Skip getStockCurrentPrice for non-equity code: ${stockCode}`,
         );
         return 0;
       }
@@ -293,7 +293,7 @@ export class KisClient {
             FID_COND_MRKT_DIV_CODE: "J",
             FID_INPUT_ISCD: stockCode,
           },
-        }
+        },
       );
 
       if (response.data.rt_cd !== "0") {
@@ -306,11 +306,11 @@ export class KisClient {
       // 스택 전체를 찍지 않고 요약 정보만 경고로 남긴다.
       if (axios.isAxiosError(error)) {
         console.warn(
-          `[KIS Error] Price Fetch (${stockCode}): status=${error.response?.status} message=${error.message}`
+          `[KIS Error] Price Fetch (${stockCode}): status=${error.response?.status} message=${error.message}`,
         );
       } else {
         console.warn(
-          `[KIS Error] Price Fetch (${stockCode}): ${String(error)}`
+          `[KIS Error] Price Fetch (${stockCode}): ${String(error)}`,
         );
       }
       return 0;
@@ -322,7 +322,7 @@ export class KisClient {
    */
   public async getNews(
     appKey: string,
-    appSecret: string
+    appSecret: string,
   ): Promise<{ date: string; time: string; title: string; code: string }[]> {
     if (this.env === "vps") return [];
 
@@ -333,7 +333,7 @@ export class KisClient {
         {
           headers,
           params: { FID_NEWS_KEY: "" },
-        }
+        },
       );
 
       if (response.data.rt_cd !== "0") return [];
@@ -358,7 +358,7 @@ export class KisClient {
           error.response.status
         } msg=${error.response.data?.msg1 || "Unknown"} code=${
           error.response.data?.rt_cd || "Unknown"
-        }`
+        }`,
       );
     } else {
       console.error(`[KIS Internal Error] ${context} (${id}):`, error);

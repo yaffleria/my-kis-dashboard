@@ -59,7 +59,7 @@ function LoginContent() {
             onClick={handleLogin}
             className={cn(
               "w-full py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-3",
-              "bg-white text-black hover:bg-white/90 focus:ring-2 focus:ring-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              "bg-white text-black hover:bg-white/90 focus:ring-2 focus:ring-white/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
             )}
           >
             {loading ? (

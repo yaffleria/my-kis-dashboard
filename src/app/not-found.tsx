@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 export default function NotFound() {
   return (
     <div className="h-screen w-full bg-black relative overflow-hidden flex flex-col items-center justify-center text-white font-sans selection:bg-violet-500/30">
-      {/* Background Effects (Matching VoronoiPortfolio) */}
+      {/* Background Effects */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.15),transparent_70%)]" />
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20" />
